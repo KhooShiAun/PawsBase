@@ -2,43 +2,45 @@ import 'package:flutter/material.dart';
 
 class PawsBaseTokens {
   // Surface Colors
-  static const Color surface = Color(0xFFFCFAEF);
+  static const Color surface = Color(0xFFF5F5F0); // Tertiary from image
   static const Color surfaceDim = Color(0xFFDCDAD0);
-  static const Color surfaceBright = Color(0xFFFCFAEF);
-  static const Color surfaceContainerLowest = Color(0xFFFFFFFF);
-  static const Color surfaceContainerLow = Color(0xFFF6F4E9);
-  static const Color surfaceContainer = Color(0xFFF0EEE3);
-  static const Color surfaceContainerHigh = Color(0xFFEAE8DE);
-  static const Color surfaceContainerHighest = Color(0xFFE5E2D8);
-
-  // Brand / Primary Colors (Sage Green)
-  static const Color primary = Color(0xFF4C644E); // Deep Sage
-  static const Color primaryContainer = Color(0xFF8FA98F); // Soft Sage
+  static const Color surfaceBright = Color(0xFFFFFFFF);
+  
+  // Brand / Primary Colors
+  static const Color primary = Color(0xFF8FA98F); // Primary from image
+  static const Color primaryDark = Color(0xFF4C644E); // Dark shade from primary scale
   static const Color onPrimary = Color(0xFFFFFFFF);
+  static const Color primaryContainer = Color(0xFF8FA98F); 
   static const Color onPrimaryContainer = Color(0xFF1B2C1C);
 
-  // Secondary / Accent Colors (Sand/Earth)
-  static const Color secondary = Color(0xFF7D7767);
-  static const Color secondaryContainer = Color(0xFFDED9C9);
-  static const Color onSecondary = Color(0xFFFFFFFF);
+  // Secondary / Accent Colors 
+  static const Color secondary = Color(0xFFE6D5B8); // Secondary from image
+  static const Color secondaryDark = Color(0xFF7D7767); // Dark shade from secondary scale
+  static const Color onSecondary = Color(0xFF1C1C18);
+  static const Color secondaryContainer = Color(0xFFE6D5B8);
   static const Color onSecondaryContainer = Color(0xFF2B261A);
 
-  // Text / Typography Colors
+  // Tertiary
+  static const Color tertiary = Color(0xFFF5F5F0);
+  static const Color onTertiary = Color(0xFF1C1C18);
+
+  // Neutral / Text Colors
+  static const Color neutral = Color(0xFF5C5C54); // Neutral from image
+  static const Color neutralDark = Color(0xFF333330); // Dark shade for inverted
   static const Color onSurface = Color(0xFF1C1C18);
-  static const Color onSurfaceVariant = Color(0xFF49483E);
-  static const Color outline = Color(0xFF7A796C);
+  static const Color onSurfaceVariant = Color(0xFF5C5C54);
+  static const Color outline = Color(0xFF5C5C54);
 
   // Functional Colors
   static const Color error = Color(0xFFBA1A1A);
   static const Color onError = Color(0xFFFFFFFF);
-  static const Color success = Color(0xFF4C644E); // Using brand green for success states
 
   // Design System Metadata
   static const String fontFamily = 'Quicksand';
   static const double borderRadius = 8.0;
+  static const double borderRadiusPill = 999.0; // For pill shapes
 }
 
-// Example usage of a Zen-themed ColorScheme
 final ColorScheme pawsBaseColorScheme = ColorScheme(
   brightness: Brightness.light,
   primary: PawsBaseTokens.primary,
@@ -49,9 +51,11 @@ final ColorScheme pawsBaseColorScheme = ColorScheme(
   onSecondary: PawsBaseTokens.onSecondary,
   secondaryContainer: PawsBaseTokens.secondaryContainer,
   onSecondaryContainer: PawsBaseTokens.onSecondaryContainer,
+  tertiary: PawsBaseTokens.tertiary,
+  onTertiary: PawsBaseTokens.onTertiary,
   surface: PawsBaseTokens.surface,
   onSurface: PawsBaseTokens.onSurface,
-  surfaceVariant: PawsBaseTokens.surfaceContainer,
+  surfaceVariant: PawsBaseTokens.secondary, // Light beige surface variant
   onSurfaceVariant: PawsBaseTokens.onSurfaceVariant,
   outline: PawsBaseTokens.outline,
   error: PawsBaseTokens.error,
