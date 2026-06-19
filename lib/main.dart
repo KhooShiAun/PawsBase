@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'; 
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:pawsbase/views/main/main_page.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -46,11 +47,7 @@ class MainApp extends StatelessWidget {
       // system theme 
       themeMode: ThemeMode.system, 
 
-      home: const Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
-      ),
+      home: const MainPage(),
     );
   }
 }
