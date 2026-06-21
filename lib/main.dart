@@ -45,7 +45,7 @@ class MainApp extends StatelessWidget {
       ),
       
       // system theme 
-      themeMode: ThemeMode.system, 
+      themeMode: ThemeMode.light, 
 
       home: const MainPage(),
     );

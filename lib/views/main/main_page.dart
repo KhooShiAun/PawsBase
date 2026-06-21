@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 import 'package:pawsbase/views/health_log/health_log_page.dart';
+import 'package:pawsbase/widgets/paws_card/paws_card.dart';
+import 'package:pawsbase/widgets/paws_search_bar/paws_search_bar.dart';
+import 'package:pawsbase/widgets/paws_bottom_nav/paws_bottom_nav.dart';
+import 'package:pawsbase/views/pets/pet.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -10,11 +14,11 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _currentIndex = 0;
+  int _currentIndex = 1; // Default to 'Pets' tab as shown in the mockup
 
   final List<Widget> _pages = [
     const _PlaceholderPage('Home'),
-    const _PlaceholderPage('Pets'),
+    const _PetsPage(),
     const HealthLogPage(),
     const _PlaceholderPage('Training'),
     const _PlaceholderPage('Settings'),
@@ -22,43 +26,50 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: PawsBaseTokens.surface,
+      backgroundColor: isDark ? colorScheme.surface : PawsBaseTokens.surface,
       appBar: AppBar(
-        backgroundColor: PawsBaseTokens.surface,
+        backgroundColor: isDark ? colorScheme.surface : PawsBaseTokens.surface,
         elevation: 0,
         scrolledUnderElevation: 0,
-        title: const Text(
+        title: Text(
           'PawsBase',
           style: TextStyle(
             fontFamily: PawsBaseTokens.fontFamily,
             fontSize: 24,
             fontWeight: FontWeight.w600,
-            color: PawsBaseTokens.primaryDark,
+            color: isDark ? colorScheme.primary : PawsBaseTokens.primaryDark,
           ),
         ),
         centerTitle: true,
         leading: Padding(
-          padding: const EdgeInsets.only(left: 24.0),
+          padding: const EdgeInsets.only(left: 20.0),
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+              border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
             ),
             child: const CircleAvatar(
               backgroundColor: PawsBaseTokens.secondaryContainer,
               backgroundImage: NetworkImage(
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuCWw7Q21E5d946zOBAOb-YuUz-WP_pC6uGH0qJcndRsjgO5wpNDD4IC5gXPMBaNrJA7HLcmSrxITTROROmS-p6IwuvmFkJ-ypy_KbSFwUzbh_nwRaEKNbYitSH0mPPPXusYU-EolReFRKqsZFEVrEQuTOblMboYQ0UY8eVrKRea5EThTsPcH1IXHbig-EygDsLl4Iyn0-EqoFi4IHqDVqvSpMBXToJTh2mfOTMKvp_gZDrMex1ya3MKWHKYXVrL4X2cLQfkMRUBg4Cb',
+                'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150', // high quality avatar matching mockup
               ),
             ),
           ),
         ),
-        leadingWidth: 64,
+        leadingWidth: 60,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
-              icon: const Icon(Icons.notifications_none, color: PawsBaseTokens.primaryDark, size: 28),
+              icon: Icon(
+                Icons.notifications_none, 
+                color: isDark ? colorScheme.primary : PawsBaseTokens.primaryDark, 
+                size: 28,
+              ),
               onPressed: () {},
             ),
           ),
@@ -68,71 +79,135 @@ class _MainPageState extends State<MainPage> {
         index: _currentIndex,
         children: _pages,
       ),
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: PawsBaseTokens.surface, // Or surfaceDim depending on preference
-          boxShadow: [
-            BoxShadow(
-              color: PawsBaseTokens.primaryDark.withOpacity(0.06),
-              offset: const Offset(0, -4),
-              blurRadius: 20,
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(0, Icons.home, 'Home'),
-              _buildNavItem(1, Icons.pets, 'Pets'),
-              _buildNavItem(2, Icons.monitor_heart, 'Health'),
-              _buildNavItem(3, Icons.fitness_center, 'Training'),
-              _buildNavItem(4, Icons.settings, 'Settings'),
-            ],
-          ),
-        ),
+      floatingActionButton: _currentIndex == 1
+          ? FloatingActionButton(
+              onPressed: () {
+                // Add action
+              },
+              backgroundColor: isDark ? colorScheme.primary : PawsBaseTokens.primaryDark,
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16.0),
+              ),
+              child: const Icon(Icons.add, color: Colors.white, size: 28),
+            )
+          : null,
+      bottomNavigationBar: PawsBottomNav(
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
       ),
     );
   }
+}
 
-  Widget _buildNavItem(int index, IconData icon, String label) {
-    final isSelected = _currentIndex == index;
+class _PetsPage extends StatefulWidget {
+  const _PetsPage({Key? key}) : super(key: key);
 
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _currentIndex = index;
-        });
-      },
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? PawsBaseTokens.primaryContainer.withOpacity(0.7) : Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? PawsBaseTokens.onPrimaryContainer : PawsBaseTokens.neutral,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
+  @override
+  State<_PetsPage> createState() => _PetsPageState();
+}
+
+class _PetsPageState extends State<_PetsPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  final List<Pet> _allPets = const [
+    Pet(
+      id: '1',
+      name: 'Barnaby',
+      species: 'Dog',
+      breed: 'Golden Retriever',
+      imageUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=400',
+    ),
+    Pet(
+      id: '2',
+      name: 'Luna',
+      species: 'Cat',
+      breed: 'Domestic Shorthair',
+      imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=400',
+    ),
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filteredPets = _allPets.where((pet) {
+      final query = _searchQuery.toLowerCase();
+      final nameMatch = pet.name.toLowerCase().contains(query);
+      final breedMatch = (pet.breed ?? '').toLowerCase().contains(query);
+      final speciesMatch = pet.species.toLowerCase().contains(query);
+      return nameMatch || breedMatch || speciesMatch;
+    }).toList();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 20),
+          Center(
+            child: Text(
+              'My Family',
               style: TextStyle(
                 fontFamily: PawsBaseTokens.fontFamily,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                color: isSelected ? PawsBaseTokens.onPrimaryContainer : PawsBaseTokens.neutral,
+                fontSize: 36,
+                fontWeight: FontWeight.w400,
+                color: Theme.of(context).colorScheme.onSurface,
+                letterSpacing: -0.5,
               ),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 24),
+          PawsSearchBar(
+            controller: _searchController,
+            hintText: 'Search pets...',
+            onChanged: (value) {
+              setState(() {
+                _searchQuery = value;
+              });
+            },
+          ),
+          const SizedBox(height: 24),
+          Expanded(
+            child: filteredPets.isEmpty
+                ? Center(
+                    child: Text(
+                      'No pets found',
+                      style: TextStyle(
+                        fontFamily: PawsBaseTokens.fontFamily,
+                        fontSize: 16,
+                        color: PawsBaseTokens.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.only(bottom: 100), // Clear float FAB & bottom navigation
+                    itemCount: filteredPets.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: 24),
+                    itemBuilder: (context, index) {
+                      final pet = filteredPets[index];
+                      return PawsCard(
+                        name: pet.name,
+                        species: pet.species,
+                        breed: pet.breed,
+                        imageUrl: pet.imageUrl,
+                        onTap: () {
+                          // Action on tap
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
       ),
     );
   }
@@ -150,7 +225,7 @@ class _PlaceholderPage extends StatelessWidget {
       body: Center(
         child: Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontFamily: PawsBaseTokens.fontFamily,
             fontSize: 32,
             fontWeight: FontWeight.w700,
