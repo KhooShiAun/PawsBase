@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:pawsbase/views/health_log/health_log_page.dart';
 import 'package:pawsbase/widgets/paws_card/paws_card.dart';
 import 'package:pawsbase/widgets/paws_search_bar/paws_search_bar.dart';
@@ -114,23 +115,40 @@ class _PetsPage extends StatefulWidget {
 class _PetsPageState extends State<_PetsPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  List<Pet> _allPets = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  final List<Pet> _allPets = const [
-    Pet(
-      id: '1',
-      name: 'Barnaby',
-      species: 'Dog',
-      breed: 'Golden Retriever',
-      imageUrl: 'https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=400',
-    ),
-    Pet(
-      id: '2',
-      name: 'Luna',
-      species: 'Cat',
-      breed: 'Domestic Shorthair',
-      imageUrl: 'https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=400',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _fetchPets();
+  }
+
+  Future<void> _fetchPets() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final List<dynamic> response = await Supabase.instance.client
+          .from('pets')
+          .select();
+      
+      final loadedPets = response.map((data) => Pet.fromJson(data as Map<String, dynamic>)).toList();
+
+      setState(() {
+        _allPets = loadedPets;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Failed to load pets. Please try again.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -140,6 +158,43 @@ class _PetsPageState extends State<_PetsPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage!,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontSize: 16,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _fetchPets,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: PawsBaseTokens.primaryDark,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final filteredPets = _allPets.where((pet) {
       final query = _searchQuery.toLowerCase();
       final nameMatch = pet.name.toLowerCase().contains(query);
