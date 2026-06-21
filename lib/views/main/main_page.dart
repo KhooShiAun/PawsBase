@@ -55,8 +55,10 @@ class _MainPageState extends State<MainPage> {
             ),
             child: const CircleAvatar(
               backgroundColor: PawsBaseTokens.secondaryContainer,
-              backgroundImage: NetworkImage(
-                'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=150', // high quality avatar matching mockup
+              child: Icon(
+                Icons.person,
+                color: PawsBaseTokens.primaryDark,
+                size: 24,
               ),
             ),
           ),
