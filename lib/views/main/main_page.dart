@@ -6,6 +6,7 @@ import 'package:pawsbase/widgets/paws_card/paws_card.dart';
 import 'package:pawsbase/widgets/paws_search_bar/paws_search_bar.dart';
 import 'package:pawsbase/widgets/paws_bottom_nav/paws_bottom_nav.dart';
 import 'package:pawsbase/views/pets/pet.dart';
+import 'package:pawsbase/views/home/home_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -18,7 +19,7 @@ class _MainPageState extends State<MainPage> {
   int _currentIndex = 1; // Default to 'Pets' tab as shown in the mockup
 
   final List<Widget> _pages = [
-    const _PlaceholderPage('Home'),
+    const HomePage(),
     const _PetsPage(),
     const HealthLogPage(),
     const _PlaceholderPage('Training'),
