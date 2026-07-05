@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:pawsbase/views/health_log/health_log_page.dart';
 import 'package:pawsbase/widgets/paws_card/paws_card.dart';
 import 'package:pawsbase/widgets/paws_search_bar/paws_search_bar.dart';
 import 'package:pawsbase/widgets/paws_bottom_nav/paws_bottom_nav.dart';
 import 'package:pawsbase/views/pets/pet.dart';
 import 'package:pawsbase/views/home/home_page.dart';
+import 'package:pawsbase/views/training/training_checklist_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -22,7 +23,7 @@ class _MainPageState extends State<MainPage> {
     const HomePage(),
     const _PetsPage(),
     const HealthLogPage(),
-    const _PlaceholderPage('Training'),
+    const TrainingChecklistPage(),
     const _PlaceholderPage('Settings'),
   ];
 
@@ -54,12 +55,11 @@ class _MainPageState extends State<MainPage> {
               shape: BoxShape.circle,
               border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
             ),
-            child: const CircleAvatar(
+            child: CircleAvatar(
               backgroundColor: PawsBaseTokens.secondaryContainer,
-              child: Icon(
-                Icons.person,
-                color: PawsBaseTokens.primaryDark,
-                size: 24,
+              backgroundImage: NetworkImage(
+                Supabase.instance.client.auth.currentUser?.userMetadata?['avatar_url'] ??
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuCWw7Q21E5d946zOBAOb-YuUz-WP_pC6uGH0qJcndRsjgO5wpNDD4IC5gXPMBaNrJA7HLcmSrxITTROROmS-p6IwuvmFkJ-ypy_KbSFwUzbh_nwRaEKNbYitSH0mPPPXusYU-EolReFRKqsZFEVrEQuTOblMboYQ0UY8eVrKRea5EThTsPcH1IXHbig-EygDsLl4Iyn0-EqoFi4IHqDVqvSpMBXToJTh2mfOTMKvp_gZDrMex1ya3MKWHKYXVrL4X2cLQfkMRUBg4Cb',
               ),
             ),
           ),
