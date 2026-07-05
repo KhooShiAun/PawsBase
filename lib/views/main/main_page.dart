@@ -16,7 +16,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const _PlaceholderPage('Pets'),
-    const HealthLogPage(),
+    const _PlaceholderPage('Health'),
     const _PlaceholderPage('Training'),
     const _PlaceholderPage('Settings'),
   ];
