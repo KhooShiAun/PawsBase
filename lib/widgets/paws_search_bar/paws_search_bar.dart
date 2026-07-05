@@ -15,9 +15,9 @@ class PawsSearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: PawsBaseTokens.surfaceDim.withOpacity(0.5), // Light beige/gray background
+        color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5), // Light beige/gray background
         borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
-        border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+        border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(

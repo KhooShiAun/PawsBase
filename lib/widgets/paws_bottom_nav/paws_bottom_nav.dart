@@ -17,7 +17,7 @@ class PawsBottomNav extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
-        color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
+        color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
       ),
       child: Row(
@@ -52,4 +52,3 @@ class PawsBottomNav extends StatelessWidget {
     );
   }
 }
-

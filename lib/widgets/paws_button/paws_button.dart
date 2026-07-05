@@ -1,7 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 
-enum ButtonType { primary, secondary, inverted, outline, labelIcon, squareIcon, circleIcon }
+enum ButtonType {
+  primary,
+  secondary,
+  inverted,
+  outline,
+  labelIcon,
+  squareIcon,
+  circleIcon,
+}
 
 class PawsButton extends StatelessWidget {
   final String? text;
@@ -27,7 +35,10 @@ class PawsButton extends StatelessWidget {
     Color textColor;
     BorderSide? borderSide;
     double radius = PawsBaseTokens.borderRadius;
-    EdgeInsets padding = const EdgeInsets.symmetric(horizontal: 24, vertical: 16);
+    EdgeInsets padding = const EdgeInsets.symmetric(
+      horizontal: 24,
+      vertical: 16,
+    );
 
     switch (type) {
       case ButtonType.primary:
@@ -52,7 +63,7 @@ class PawsButton extends StatelessWidget {
         textColor = PawsBaseTokens.neutralDark;
         break;
       case ButtonType.squareIcon:
-        backgroundColor = PawsBaseTokens.neutral.withOpacity(0.5);
+        backgroundColor = PawsBaseTokens.neutral.withValues(alpha: 0.5);
         textColor = PawsBaseTokens.neutralDark;
         padding = const EdgeInsets.all(16);
         break;
@@ -99,4 +110,3 @@ class PawsButton extends StatelessWidget {
     );
   }
 }
-

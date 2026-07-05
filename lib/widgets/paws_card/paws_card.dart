@@ -25,9 +25,9 @@ class PawsCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -35,7 +35,9 @@ class PawsCard extends StatelessWidget {
             CircleAvatar(
               radius: 32,
               backgroundColor: colorScheme.primaryContainer,
-              backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
+              backgroundImage: imageUrl != null
+                  ? NetworkImage(imageUrl!)
+                  : null,
               child: imageUrl == null
                   ? Icon(Icons.pets, color: colorScheme.onPrimaryContainer)
                   : null,

@@ -10,6 +10,10 @@
 // **************************************************************************
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
+import 'package:pawsbase/views/health_log/health_log_page.stories.dart'
+    as _pawsbase_views_health_log_health_log_page_stories;
+import 'package:pawsbase/views/settings/settings_page.stories.dart'
+    as _pawsbase_views_settings_settings_page_stories;
 import 'package:pawsbase/widgets/paws_bottom_nav/paws_bottom_nav.stories.dart'
     as _pawsbase_widgets_paws_bottom_nav_paws_bottom_nav_stories;
 import 'package:pawsbase/widgets/paws_button/paws_button.stories.dart'
@@ -25,6 +29,41 @@ import 'package:pawsbase/widgets/paws_search_bar/paws_search_bar.stories.dart'
 import 'package:widgetbook/widgetbook.dart' as _widgetbook;
 
 final directories = <_widgetbook.WidgetbookNode>[
+  _widgetbook.WidgetbookFolder(
+    name: 'views',
+    children: [
+      _widgetbook.WidgetbookFolder(
+        name: 'health_log',
+        children: [
+          _widgetbook.WidgetbookComponent(
+            name: 'HealthLogPage',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _pawsbase_views_health_log_health_log_page_stories
+                    .healthLogPageDefaultUseCase,
+              ),
+            ],
+          ),
+        ],
+      ),
+      _widgetbook.WidgetbookFolder(
+        name: 'settings',
+        children: [
+          _widgetbook.WidgetbookComponent(
+            name: 'SettingsPage',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _pawsbase_views_settings_settings_page_stories
+                    .settingsPageDefaultUseCase,
+              ),
+            ],
+          ),
+        ],
+      ),
+    ],
+  ),
   _widgetbook.WidgetbookFolder(
     name: 'widgets',
     children: [

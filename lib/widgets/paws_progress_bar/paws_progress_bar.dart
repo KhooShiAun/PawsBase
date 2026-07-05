@@ -19,7 +19,7 @@ class PawsProgressBar extends StatelessWidget {
       height: 8,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
+        color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
       ),
       child: LayoutBuilder(
