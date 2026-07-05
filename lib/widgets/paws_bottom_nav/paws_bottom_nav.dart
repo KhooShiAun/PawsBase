@@ -102,4 +102,3 @@ class PawsBottomNav extends StatelessWidget {
     );
   }
 }
-

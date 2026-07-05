@@ -5,15 +5,17 @@ class PawsBaseTokens {
   static const Color surface = Color(0xFFF5F5F0); // Tertiary from image
   static const Color surfaceDim = Color(0xFFDCDAD0);
   static const Color surfaceBright = Color(0xFFFFFFFF);
-  
+
   // Brand / Primary Colors
   static const Color primary = Color(0xFF8FA98F); // Primary from image
-  static const Color primaryDark = Color(0xFF4C644E); // Dark shade from primary scale
+  static const Color primaryDark = Color(
+    0xFF4C644E,
+  ); // Dark shade from primary scale
   static const Color onPrimary = Color(0xFFFFFFFF);
-  static const Color primaryContainer = Color(0xFF8FA98F); 
+  static const Color primaryContainer = Color(0xFF8FA98F);
   static const Color onPrimaryContainer = Color(0xFF1B2C1C);
 
-  // Secondary / Accent Colors 
+  // Secondary / Accent Colors
   static const Color secondary = Color(0xFFE6D5B8); // Secondary from image
   static const Color secondaryDark = Color(0xFF7D7767); // Dark shade from secondary scale
   static const Color onSecondary = Color(0xFF1C1C18); 
@@ -55,7 +57,8 @@ final ColorScheme pawsBaseColorScheme = ColorScheme(
   onTertiary: PawsBaseTokens.onTertiary,
   surface: PawsBaseTokens.surface,
   onSurface: PawsBaseTokens.onSurface,
-  surfaceVariant: PawsBaseTokens.secondary, // Light beige surface variant
+  surfaceContainerHighest:
+      PawsBaseTokens.secondary, // Light beige surface variant
   onSurfaceVariant: PawsBaseTokens.onSurfaceVariant,
   outline: PawsBaseTokens.outline,
   error: PawsBaseTokens.error,
@@ -107,7 +110,7 @@ final ColorScheme pawsBaseDarkColorScheme = ColorScheme(
   onSecondaryContainer: PawsBaseDarkTokens.onSecondaryContainer,
   surface: PawsBaseDarkTokens.surface,
   onSurface: PawsBaseDarkTokens.onSurface,
-  surfaceVariant: PawsBaseDarkTokens.surfaceContainer,
+  surfaceContainerHighest: PawsBaseDarkTokens.surfaceContainer,
   onSurfaceVariant: PawsBaseDarkTokens.onSurfaceVariant,
   outline: PawsBaseDarkTokens.outline,
   error: PawsBaseDarkTokens.error,
