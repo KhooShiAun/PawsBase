@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
+import 'package:pawsbase/views/health_log/health_log_page.dart';
+import 'package:pawsbase/views/home/home_page.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -12,7 +14,7 @@ class _MainPageState extends State<MainPage> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    const _PlaceholderPage('Home'),
+    const HomePage(),
     const _PlaceholderPage('Pets'),
     const _PlaceholderPage('Health'),
     const _PlaceholderPage('Training'),
