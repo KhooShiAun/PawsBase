@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
-import 'package:supabase_flutter/supabase_flutter.dart'; 
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:pawsbase/views/auth/auth_gate.dart';
 
@@ -21,7 +21,6 @@ Future<void> main() async {
 
 final supabase = Supabase.instance.client;
 
-
 class MainApp extends StatelessWidget {
   const MainApp({super.key});
 
@@ -29,23 +28,23 @@ class MainApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'PawsBase',
-      
+
       // light theme setup
       theme: ThemeData(
         colorScheme: pawsBaseColorScheme,
         fontFamily: PawsBaseTokens.fontFamily,
         useMaterial3: true,
       ),
-      
+
       // dark theme setup
       darkTheme: ThemeData(
         colorScheme: pawsBaseDarkColorScheme,
         fontFamily: PawsBaseTokens.fontFamily,
         useMaterial3: true,
       ),
-      
-      // system theme 
-      themeMode: ThemeMode.light, 
+
+      // system theme
+      themeMode: ThemeMode.light,
 
       home: const AuthGate(),
     );

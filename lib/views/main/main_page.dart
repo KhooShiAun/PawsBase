@@ -5,6 +5,7 @@ import 'package:pawsbase/widgets/paws_card/paws_card.dart';
 import 'package:pawsbase/widgets/paws_search_bar/paws_search_bar.dart';
 import 'package:pawsbase/widgets/paws_bottom_nav/paws_bottom_nav.dart';
 import 'package:pawsbase/views/pets/pet.dart';
+import 'package:pawsbase/views/pets/add_pet_page.dart';
 import 'package:pawsbase/views/home/home_page.dart';
 import 'package:pawsbase/views/training/training_checklist_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -200,6 +201,10 @@ class _PetsPageState extends State<_PetsPage> {
       );
     }
 
+    if (_allPets.isEmpty) {
+      return const _EmptyPetsPage();
+    }
+
     final filteredPets = _allPets.where((pet) {
       final query = _searchQuery.toLowerCase();
       final nameMatch = pet.name.toLowerCase().contains(query);
@@ -273,8 +278,8 @@ class _PetsPageState extends State<_PetsPage> {
   }
 }
 
-class _PetsPage extends StatelessWidget {
-  const _PetsPage({Key? key}) : super(key: key);
+class _EmptyPetsPage extends StatelessWidget {
+  const _EmptyPetsPage({super.key});
 
   @override
   Widget build(BuildContext context) {
