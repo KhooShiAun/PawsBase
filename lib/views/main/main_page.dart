@@ -5,12 +5,13 @@ import 'package:pawsbase/widgets/paws_card/paws_card.dart';
 import 'package:pawsbase/widgets/paws_search_bar/paws_search_bar.dart';
 import 'package:pawsbase/widgets/paws_bottom_nav/paws_bottom_nav.dart';
 import 'package:pawsbase/views/pets/pet.dart';
+import 'package:pawsbase/views/pets/add_pet_page.dart';
 import 'package:pawsbase/views/home/home_page.dart';
 import 'package:pawsbase/views/training/training_checklist_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MainPage extends StatefulWidget {
-  const MainPage({Key? key}) : super(key: key);
+  const MainPage({super.key});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -53,7 +54,7 @@ class _MainPageState extends State<MainPage> {
           child: Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              border: Border.all(color: colorScheme.outline.withOpacity(0.2)),
+              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
             ),
             child: CircleAvatar(
               backgroundColor: PawsBaseTokens.secondaryContainer,
@@ -86,7 +87,9 @@ class _MainPageState extends State<MainPage> {
       floatingActionButton: _currentIndex == 1
           ? FloatingActionButton(
               onPressed: () {
-                // Add action
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AddPetPage()),
+                );
               },
               backgroundColor: isDark ? colorScheme.primary : PawsBaseTokens.primaryDark,
               elevation: 4,
@@ -109,7 +112,7 @@ class _MainPageState extends State<MainPage> {
 }
 
 class _PetsPage extends StatefulWidget {
-  const _PetsPage({Key? key}) : super(key: key);
+  const _PetsPage();
 
   @override
   State<_PetsPage> createState() => _PetsPageState();
@@ -271,81 +274,11 @@ class _PetsPageState extends State<_PetsPage> {
   }
 }
 
-class _PetsPage extends StatelessWidget {
-  const _PetsPage({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: PawsBaseTokens.surface,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: PawsBaseTokens.primaryContainer.withOpacity(0.3),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.pets, color: PawsBaseTokens.primaryDark, size: 40),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              "Your Pets",
-              style: TextStyle(
-                fontFamily: PawsBaseTokens.fontFamily,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: PawsBaseTokens.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Add your first pet to get started.",
-              style: TextStyle(
-                fontFamily: PawsBaseTokens.fontFamily,
-                fontSize: 16,
-                color: PawsBaseTokens.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const AddPetPage()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: PawsBaseTokens.primaryDark,
-                foregroundColor: PawsBaseTokens.onPrimary,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
-                ),
-              ),
-              icon: const Icon(Icons.add, size: 20),
-              label: const Text(
-                'Add a Pet',
-                style: TextStyle(
-                  fontFamily: PawsBaseTokens.fontFamily,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 class _PlaceholderPage extends StatelessWidget {
   final String title;
 
-  const _PlaceholderPage(this.title, {Key? key}) : super(key: key);
+  const _PlaceholderPage(this.title);
 
   @override
   Widget build(BuildContext context) {

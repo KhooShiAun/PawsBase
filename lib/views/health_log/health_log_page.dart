@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 
 class HealthLogPage extends StatelessWidget {
-  const HealthLogPage({Key? key}) : super(key: key);
+  const HealthLogPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +49,7 @@ class HealthLogPage extends StatelessWidget {
               decoration: BoxDecoration(
                 color: PawsBaseTokens.surfaceBright, 
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+                border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
               ),
               child: Row(
                 children: [
@@ -57,7 +57,7 @@ class HealthLogPage extends StatelessWidget {
                     width: 64,
                     height: 64,
                     decoration: BoxDecoration(
-                      color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
+                      color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: const Icon(Icons.scale, color: PawsBaseTokens.primaryDark, size: 32),
@@ -111,7 +111,7 @@ class HealthLogPage extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: PawsBaseTokens.primaryContainer.withOpacity(0.3),
+                          color: PawsBaseTokens.primaryContainer.withValues(alpha: 0.3),
                           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
                         ),
                         child: Row(
@@ -196,7 +196,7 @@ class HealthLogPage extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: PawsBaseTokens.surfaceDim.withOpacity(0.3),
+                  color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.3),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
@@ -246,7 +246,7 @@ class HealthLogPage extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
+        color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -321,7 +321,7 @@ class HealthLogPage extends StatelessWidget {
                     bottom: -40,
                     child: Container(
                       width: 1,
-                      color: PawsBaseTokens.outline.withOpacity(0.3),
+                      color: PawsBaseTokens.outline.withValues(alpha: 0.3),
                     ),
                   ),
                 Positioned(
@@ -335,7 +335,7 @@ class HealthLogPage extends StatelessWidget {
                       border: Border.all(color: PawsBaseTokens.surface, width: 3),
                       boxShadow: [
                         BoxShadow(
-                          color: PawsBaseTokens.outline.withOpacity(0.1),
+                          color: PawsBaseTokens.outline.withValues(alpha: 0.1),
                           blurRadius: 4,
                           offset: const Offset(0, 2),
                         ),
@@ -357,7 +357,7 @@ class HealthLogPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: PawsBaseTokens.surfaceBright,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+                  border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

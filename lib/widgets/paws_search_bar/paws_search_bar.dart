@@ -21,7 +21,7 @@ class PawsSearchBar extends StatelessWidget {
     return Container(
       height: 56,
       decoration: BoxDecoration(
-        color: isDark ? colorScheme.surfaceVariant : PawsBaseTokens.surfaceDim,
+        color: isDark ? colorScheme.surfaceContainerHighest : PawsBaseTokens.surfaceDim,
         borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -49,7 +49,7 @@ class PawsSearchBar extends StatelessWidget {
                 hintText: hintText,
                 hintStyle: TextStyle(
                   fontFamily: PawsBaseTokens.fontFamily,
-                  color: isDark ? colorScheme.onSurfaceVariant.withOpacity(0.6) : PawsBaseTokens.onSurfaceVariant,
+                  color: isDark ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6) : PawsBaseTokens.onSurfaceVariant,
                   fontSize: 16,
                 ),
                 border: InputBorder.none,

@@ -24,7 +24,7 @@ class PawsCard extends StatelessWidget {
     
     // Background color: pure white in light mode, dark surface container in dark mode.
     final backgroundColor = isDark 
-        ? colorScheme.surfaceVariant 
+        ? colorScheme.surfaceContainerHighest 
         : PawsBaseTokens.surfaceBright;
 
     return GestureDetector(
@@ -36,14 +36,14 @@ class PawsCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(28.0),
           border: Border.all(
             color: isDark 
-                ? colorScheme.outline.withOpacity(0.2) 
-                : colorScheme.onSurface.withOpacity(0.04),
+                ? colorScheme.outline.withValues(alpha: 0.2) 
+                : colorScheme.onSurface.withValues(alpha: 0.04),
           ),
           boxShadow: [
             BoxShadow(
               color: isDark 
-                  ? Colors.black.withOpacity(0.2) 
-                  : colorScheme.onSurface.withOpacity(0.02),
+                  ? Colors.black.withValues(alpha: 0.2) 
+                  : colorScheme.onSurface.withValues(alpha: 0.02),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -59,14 +59,14 @@ class PawsCard extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: isDark 
-                      ? colorScheme.outline.withOpacity(0.2) 
-                      : colorScheme.onSurface.withOpacity(0.04),
+                      ? colorScheme.outline.withValues(alpha: 0.2) 
+                      : colorScheme.onSurface.withValues(alpha: 0.04),
                   width: 1,
                 ),
               ),
               child: CircleAvatar(
                 radius: 56,
-                backgroundColor: colorScheme.primaryContainer.withOpacity(0.2),
+                backgroundColor: colorScheme.primaryContainer.withValues(alpha: 0.2),
                 backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
                 child: imageUrl == null
                     ? Icon(Icons.pets, size: 40, color: colorScheme.primary)

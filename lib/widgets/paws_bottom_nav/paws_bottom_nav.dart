@@ -18,10 +18,10 @@ class PawsBottomNav extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark ? colorScheme.surfaceVariant : PawsBaseTokens.surface,
+        color: isDark ? colorScheme.surfaceContainerHighest : PawsBaseTokens.surface,
         boxShadow: [
           BoxShadow(
-            color: isDark ? Colors.black26 : PawsBaseTokens.primaryDark.withOpacity(0.04),
+            color: isDark ? Colors.black26 : PawsBaseTokens.primaryDark.withValues(alpha: 0.04),
             offset: const Offset(0, -4),
             blurRadius: 16,
           ),
@@ -57,14 +57,14 @@ class PawsBottomNav extends StatelessWidget {
     // Active container color: sage green
     final activeBgColor = isDark 
         ? colorScheme.primaryContainer 
-        : PawsBaseTokens.primaryContainer.withOpacity(0.7);
+        : PawsBaseTokens.primaryContainer.withValues(alpha: 0.7);
     final activeTextColor = isDark 
         ? colorScheme.onPrimaryContainer 
         : PawsBaseTokens.primaryDark;
 
     // Inactive text/icon color: neutral gray-green
     final inactiveColor = isDark 
-        ? colorScheme.onSurfaceVariant.withOpacity(0.6) 
+        ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6) 
         : PawsBaseTokens.neutral;
 
     return GestureDetector(

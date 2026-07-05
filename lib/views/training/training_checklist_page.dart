@@ -254,9 +254,9 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 8),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.15)),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
         ),
         child: Column(
           children: [
@@ -295,9 +295,9 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceVariant,
+          color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outline.withOpacity(0.15)),
+          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -306,7 +306,7 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: PawsBaseTokens.secondaryContainer.withOpacity(0.4),
+                color: PawsBaseTokens.secondaryContainer.withValues(alpha: 0.4),
                 shape: BoxShape.circle,
               ),
               child: Icon(
@@ -378,9 +378,9 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.15)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
       ),
       child: Row(
         children: [
@@ -388,7 +388,7 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               decoration: BoxDecoration(
-                color: PawsBaseTokens.surface.withOpacity(0.5),
+                color: PawsBaseTokens.surface.withValues(alpha: 0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: TextField(
@@ -440,9 +440,9 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
       padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceVariant,
+        color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withOpacity(0.15)),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
       ),
       child: Column(
         children: [
@@ -472,9 +472,9 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
       padding: const EdgeInsets.all(24),
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
-        color: PawsBaseTokens.error.withOpacity(0.1),
+        color: PawsBaseTokens.error.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: PawsBaseTokens.error.withOpacity(0.2)),
+        border: Border.all(color: PawsBaseTokens.error.withValues(alpha: 0.2)),
       ),
       child: Column(
         children: [
