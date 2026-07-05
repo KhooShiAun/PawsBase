@@ -4,14 +4,14 @@ publish_to: 'none'
 version: 0.1.0+1
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.11.5
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_dotenv: ^6.0.1
   supabase_flutter: ^2.14.2
-  widgetbook: ^3.24.0
+  widgetbook: 3.23.0
   widgetbook_annotation: ^3.11.0
 
 dev_dependencies:

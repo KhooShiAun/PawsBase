@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
-import 'package:pawsbase/views/health_log/health_log_page.dart';
 import 'package:pawsbase/views/home/home_page.dart';
+import 'package:pawsbase/views/training/training_checklist_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -16,8 +17,7 @@ class _MainPageState extends State<MainPage> {
   final List<Widget> _pages = [
     const HomePage(),
     const _PlaceholderPage('Pets'),
-    const _PlaceholderPage('Health'),
-    const _PlaceholderPage('Training'),
+    const TrainingChecklistPage(),
     const _PlaceholderPage('Settings'),
   ];
 
@@ -46,9 +46,10 @@ class _MainPageState extends State<MainPage> {
               shape: BoxShape.circle,
               border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
             ),
-            child: const CircleAvatar(
+            child: CircleAvatar(
               backgroundColor: PawsBaseTokens.secondaryContainer,
               backgroundImage: NetworkImage(
+                Supabase.instance.client.auth.currentUser?.userMetadata?['avatar_url'] ??
                 'https://lh3.googleusercontent.com/aida-public/AB6AXuCWw7Q21E5d946zOBAOb-YuUz-WP_pC6uGH0qJcndRsjgO5wpNDD4IC5gXPMBaNrJA7HLcmSrxITTROROmS-p6IwuvmFkJ-ypy_KbSFwUzbh_nwRaEKNbYitSH0mPPPXusYU-EolReFRKqsZFEVrEQuTOblMboYQ0UY8eVrKRea5EThTsPcH1IXHbig-EygDsLl4Iyn0-EqoFi4IHqDVqvSpMBXToJTh2mfOTMKvp_gZDrMex1ya3MKWHKYXVrL4X2cLQfkMRUBg4Cb',
               ),
             ),
@@ -87,9 +88,8 @@ class _MainPageState extends State<MainPage> {
             children: [
               _buildNavItem(0, Icons.home, 'Home'),
               _buildNavItem(1, Icons.pets, 'Pets'),
-              _buildNavItem(2, Icons.monitor_heart, 'Health'),
-              _buildNavItem(3, Icons.fitness_center, 'Training'),
-              _buildNavItem(4, Icons.settings, 'Settings'),
+              _buildNavItem(2, Icons.fitness_center, 'Training'),
+              _buildNavItem(3, Icons.settings, 'Settings'),
             ],
           ),
         ),
