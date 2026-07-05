@@ -17,10 +17,8 @@ class PawsBaseTokens {
 
   // Secondary / Accent Colors
   static const Color secondary = Color(0xFFE6D5B8); // Secondary from image
-  static const Color secondaryDark = Color(
-    0xFF7D7767,
-  ); // Dark shade from secondary scale
-  static const Color onSecondary = Color(0xFF1C1C18);
+  static const Color secondaryDark = Color(0xFF7D7767); // Dark shade from secondary scale
+  static const Color onSecondary = Color(0xFF1C1C18); 
   static const Color secondaryContainer = Color(0xFFE6D5B8);
   static const Color onSecondaryContainer = Color(0xFF2B261A);
 
