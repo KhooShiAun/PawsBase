@@ -271,6 +271,77 @@ class _PetsPageState extends State<_PetsPage> {
   }
 }
 
+class _PetsPage extends StatelessWidget {
+  const _PetsPage({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: PawsBaseTokens.surface,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: PawsBaseTokens.primaryContainer.withOpacity(0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.pets, color: PawsBaseTokens.primaryDark, size: 40),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "Your Pets",
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: PawsBaseTokens.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Add your first pet to get started.",
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                fontSize: 16,
+                color: PawsBaseTokens.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const AddPetPage()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: PawsBaseTokens.primaryDark,
+                foregroundColor: PawsBaseTokens.onPrimary,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
+                ),
+              ),
+              icon: const Icon(Icons.add, size: 20),
+              label: const Text(
+                'Add a Pet',
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _PlaceholderPage extends StatelessWidget {
   final String title;
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
+import 'package:pawsbase/views/pets/add_pet_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -15,10 +16,10 @@ class HomePage extends StatelessWidget {
           children: [
             _buildWelcomeSection(),
             const SizedBox(height: 48),
-            _buildYourPetsSection(),
+            _buildYourPetsSection(context),
             const SizedBox(height: 48),
             _buildHealthAndTrainingSection(),
-            const SizedBox(height: 48), // Padding at the bottom for safety
+            const SizedBox(height: 48),
           ],
         ),
       ),
@@ -109,7 +110,7 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildYourPetsSection() {
+  Widget _buildYourPetsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -158,7 +159,7 @@ class HomePage extends StatelessWidget {
                 "https://lh3.googleusercontent.com/aida-public/AB6AXuCFf613eqnR2I6AfbJHlq6L0dGFoGuVCTX7R5fjgTpD8fqP51LOp5uHE-bnqIjqZSPGXWb-Hd8MlAJW7_77U8fFEty5QheUogOkfJ-idZWWL0JaHu4PdkANp4UzNU6xtPH_OZaDq6hOzF67y5NrPburVyDaxnmj0JuGMtwuEnp6cYlSej7w82weDPxzHJxG5M2XHbRuyP2PCm7-ocpShHLhH2GhcmBjDtpVdz8EWMw7xIC4gtZAqBZgLEpzP_Q_LleNZKFGP7epPhEy",
               ),
               const SizedBox(width: 16),
-              _buildAddPetCard(),
+              _buildAddPetCard(context),
             ],
           ),
         ),
@@ -212,42 +213,49 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildAddPetCard() {
-    return Container(
-      width: 120,
-      height: 275, // roughly matches the pet card height
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: PawsBaseTokens.outline.withOpacity(0.3), 
-          width: 2, 
-        ), 
-        color: PawsBaseTokens.surface,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.add, color: PawsBaseTokens.primaryDark, size: 28),
+  Widget _buildAddPetCard(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const AddPetPage()),
+        );
+      },
+      child: Container(
+        width: 120,
+        height: 275,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: PawsBaseTokens.outline.withOpacity(0.3),
+            width: 2,
           ),
-          const SizedBox(height: 12),
-          const Text(
-            "ADD",
-            style: TextStyle(
-              fontFamily: PawsBaseTokens.fontFamily,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: PawsBaseTokens.onSurfaceVariant,
-              letterSpacing: 1.0,
+          color: PawsBaseTokens.surface,
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.add, color: PawsBaseTokens.primaryDark, size: 28),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            const Text(
+              "ADD",
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: PawsBaseTokens.onSurfaceVariant,
+                letterSpacing: 1.0,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -256,7 +264,6 @@ class HomePage extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Health Alert
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
@@ -317,8 +324,6 @@ class HomePage extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 24),
-
-        // Training Progress
         Container(
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
@@ -369,7 +374,6 @@ class HomePage extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
-              // Progress Bar
               Container(
                 height: 8,
                 width: double.infinity,
@@ -382,7 +386,7 @@ class HomePage extends StatelessWidget {
                   widthFactor: 0.75,
                   child: Container(
                     decoration: BoxDecoration(
-                      color: PawsBaseTokens.secondaryDark, 
+                      color: PawsBaseTokens.secondaryDark,
                       borderRadius: BorderRadius.circular(4),
                     ),
                   ),
