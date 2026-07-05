@@ -20,55 +20,78 @@ class PawsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    // Background color: pure white in light mode, dark surface container in dark mode.
+    final backgroundColor = isDark 
+        ? colorScheme.surfaceVariant 
+        : PawsBaseTokens.surfaceBright;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
-          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 32,
-              backgroundColor: colorScheme.primaryContainer,
-              backgroundImage: imageUrl != null
-                  ? NetworkImage(imageUrl!)
-                  : null,
-              child: imageUrl == null
-                  ? Icon(Icons.pets, color: colorScheme.onPrimaryContainer)
-                  : null,
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(28.0),
+          border: Border.all(
+            color: isDark 
+                ? colorScheme.outline.withOpacity(0.2) 
+                : colorScheme.onSurface.withOpacity(0.04),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: isDark 
+                  ? Colors.black.withOpacity(0.2) 
+                  : colorScheme.onSurface.withOpacity(0.02),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
-                    style: TextStyle(
-                      fontFamily: PawsBaseTokens.fontFamily,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    breed != null ? '$species • $breed' : species,
-                    style: TextStyle(
-                      fontFamily: PawsBaseTokens.fontFamily,
-                      fontSize: 14,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark 
+                      ? colorScheme.outline.withOpacity(0.2) 
+                      : colorScheme.onSurface.withOpacity(0.04),
+                  width: 1,
+                ),
+              ),
+              child: CircleAvatar(
+                radius: 56,
+                backgroundColor: colorScheme.primaryContainer.withOpacity(0.2),
+                backgroundImage: imageUrl != null ? NetworkImage(imageUrl!) : null,
+                child: imageUrl == null
+                    ? Icon(Icons.pets, size: 40, color: colorScheme.primary)
+                    : null,
               ),
             ),
-            Icon(Icons.chevron_right, color: colorScheme.outline),
+            const SizedBox(height: 20),
+            Text(
+              name,
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              breed ?? species,
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                fontSize: 14,
+                color: isDark ? colorScheme.onSurfaceVariant : PawsBaseTokens.onSurfaceVariant,
+              ),
+            ),
           ],
         ),
       ),
