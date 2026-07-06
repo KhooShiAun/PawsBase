@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
+import 'package:pawsbase/services/auth_service.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -242,8 +243,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return Center(
       child: InkWell(
-        onTap: () {
-          // Log out action
+        onTap: () async {
+          await AuthService().signOut();
         },
         borderRadius: BorderRadius.circular(999),
         child: Container(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class AddPetPage extends StatefulWidget {
   const AddPetPage({super.key});
@@ -13,6 +14,8 @@ class _AddPetPageState extends State<AddPetPage> {
   final _nameController = TextEditingController();
   final _breedController = TextEditingController();
   final _weightController = TextEditingController();
+  
+  bool _isLoading = false;
 
   String _selectedSpecies = 'dog';
   String _selectedGender = 'male';
@@ -43,17 +46,61 @@ class _AddPetPageState extends State<AddPetPage> {
     if (picked != null) setState(() => _dateOfBirth = picked);
   }
 
-  void _submit() {
+  Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${_nameController.text} added to the family!',
-            style: const TextStyle(fontFamily: PawsBaseTokens.fontFamily),
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You must be logged in to add a pet.'),
+            backgroundColor: PawsBaseTokens.error,
           ),
-          backgroundColor: PawsBaseTokens.primaryDark,
-        ),
-      );
+        );
+        return;
+      }
+
+      setState(() => _isLoading = true);
+
+      try {
+        await Supabase.instance.client.from('pets').insert({
+          'user_id': userId,
+          'name': _nameController.text.trim(),
+          'species': _selectedSpecies,
+          'gender': _selectedGender,
+          'breed': _breedController.text.trim().isEmpty ? null : _breedController.text.trim(),
+          'weight': _weightController.text.trim().isEmpty ? null : double.tryParse(_weightController.text.trim()),
+          'date_of_birth': _dateOfBirth?.toIso8601String(),
+          'adoption_date': _adoptionDate?.toIso8601String(),
+          'vaccinated': _selectedVaccinated == 'yes',
+          'neutered': _selectedNeutered == 'yes',
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '${_nameController.text} added to the family!',
+                style: const TextStyle(fontFamily: PawsBaseTokens.fontFamily),
+              ),
+              backgroundColor: PawsBaseTokens.primaryDark,
+            ),
+          );
+          Navigator.of(context).pop(true); // Return true to indicate success
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error adding pet: $e'),
+              backgroundColor: PawsBaseTokens.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
     }
   }
 
@@ -215,7 +262,7 @@ class _AddPetPageState extends State<AddPetPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: _submit,
+                      onPressed: _isLoading ? null : _submit,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: PawsBaseTokens.primaryDark,
                         foregroundColor: PawsBaseTokens.onPrimary,
@@ -225,15 +272,21 @@ class _AddPetPageState extends State<AddPetPage> {
                           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
                         ),
                       ),
-                      label: const Text(
-                        'Add to Family',
-                        style: TextStyle(
-                          fontFamily: PawsBaseTokens.fontFamily,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      icon: const Icon(Icons.favorite_rounded, size: 20),
+                      label: _isLoading 
+                        ? const SizedBox(
+                            width: 24, 
+                            height: 24, 
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)
+                          )
+                        : const Text(
+                            'Add to Family',
+                            style: TextStyle(
+                              fontFamily: PawsBaseTokens.fontFamily,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      icon: _isLoading ? const SizedBox() : const Icon(Icons.favorite_rounded, size: 20),
                       iconAlignment: IconAlignment.end,
                     ),
                   ),

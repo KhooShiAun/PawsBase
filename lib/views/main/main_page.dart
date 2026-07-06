@@ -8,6 +8,7 @@ import 'package:pawsbase/views/pets/pet.dart';
 import 'package:pawsbase/views/pets/add_pet_page.dart';
 import 'package:pawsbase/views/home/home_page.dart';
 import 'package:pawsbase/views/training/training_checklist_page.dart';
+import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:pawsbase/views/settings/settings_page.dart';
@@ -68,19 +69,7 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
         leadingWidth: 60,
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: IconButton(
-              icon: Icon(
-                Icons.notifications_none, 
-                color: isDark ? colorScheme.primary : PawsBaseTokens.primaryDark, 
-                size: 28,
-              ),
-              onPressed: () {},
-            ),
-          ),
-        ],
+
       ),
       body: IndexedStack(
         index: _currentIndex,
@@ -127,39 +116,52 @@ class _PetsPageState extends State<_PetsPage> {
   bool _isLoading = true;
   String? _errorMessage;
 
+  StreamSubscription? _petsSubscription;
+
   @override
   void initState() {
     super.initState();
-    _fetchPets();
+    _subscribeToPets();
   }
 
-  Future<void> _fetchPets() async {
+  void _subscribeToPets() {
+    // Listen for real-time updates to the pets table
+    _petsSubscription = Supabase.instance.client
+        .from('pets')
+        .stream(primaryKey: ['id'])
+        .listen((data) {
+      final loadedPets = data.map((json) => Pet.fromJson(json)).toList();
+      if (mounted) {
+        setState(() {
+          _allPets = loadedPets;
+          _isLoading = false;
+          _errorMessage = null;
+        });
+      }
+    }, onError: (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = 'Failed to load pets. Please try again.';
+          _isLoading = false;
+        });
+      }
+    });
+  }
+
+  void _retryFetch() {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-
-    try {
-      final List<dynamic> response = await Supabase.instance.client
-          .from('pets')
-          .select();
-      
-      final loadedPets = response.map((data) => Pet.fromJson(data as Map<String, dynamic>)).toList();
-
-      setState(() {
-        _allPets = loadedPets;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _errorMessage = 'Failed to load pets. Please try again.';
-        _isLoading = false;
-      });
-    }
+    // The stream will naturally re-emit or we could restart it, 
+    // but typically just waiting or restarting the app is enough.
+    _petsSubscription?.cancel();
+    _subscribeToPets();
   }
 
   @override
   void dispose() {
+    _petsSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -190,7 +192,7 @@ class _PetsPageState extends State<_PetsPage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _fetchPets,
+                onPressed: _retryFetch,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: PawsBaseTokens.primaryDark,
                   foregroundColor: Colors.white,
@@ -281,25 +283,44 @@ class _PetsPageState extends State<_PetsPage> {
 }
 
 
-class _PlaceholderPage extends StatelessWidget {
-  final String title;
-
-  const _PlaceholderPage(this.title);
+class _EmptyPetsPage extends StatelessWidget {
+  const _EmptyPetsPage();
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: PawsBaseTokens.surface,
-      body: Center(
-        child: Text(
-          title,
-          style: const TextStyle(
-            fontFamily: PawsBaseTokens.fontFamily,
-            fontSize: 32,
-            fontWeight: FontWeight.w700,
-            color: PawsBaseTokens.onSurface,
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              color: PawsBaseTokens.primaryContainer.withValues(alpha: 0.3),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.pets, color: PawsBaseTokens.primaryDark, size: 40),
           ),
-        ),
+          const SizedBox(height: 24),
+          const Text(
+            "Your Pets",
+            style: TextStyle(
+              fontFamily: PawsBaseTokens.fontFamily,
+              fontSize: 24,
+              fontWeight: FontWeight.w600,
+              color: PawsBaseTokens.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Add your first pet to get started.",
+            style: TextStyle(
+              fontFamily: PawsBaseTokens.fontFamily,
+              fontSize: 16,
+              color: PawsBaseTokens.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
