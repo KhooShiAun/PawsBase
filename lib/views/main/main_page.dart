@@ -10,6 +10,8 @@ import 'package:pawsbase/views/home/home_page.dart';
 import 'package:pawsbase/views/training/training_checklist_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'package:pawsbase/views/settings/settings_page.dart';
+
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -25,7 +27,7 @@ class _MainPageState extends State<MainPage> {
     const _PetsPage(),
     const HealthLogPage(),
     const TrainingChecklistPage(),
-    const _PlaceholderPage('Settings'),
+    const SettingsPage(),
   ];
 
   @override
@@ -199,6 +201,10 @@ class _PetsPageState extends State<_PetsPage> {
           ),
         ),
       );
+    }
+
+    if (_allPets.isEmpty) {
+      return const _EmptyPetsPage();
     }
 
     final filteredPets = _allPets.where((pet) {
