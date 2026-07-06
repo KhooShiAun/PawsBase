@@ -3,7 +3,7 @@ import 'package:pawsbase/theme/tokens.dart';
 import 'package:pawsbase/views/pets/add_pet_page.dart';
 
 class HomePage extends StatelessWidget {
-  const HomePage({Key? key}) : super(key: key);
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class HomePage extends StatelessWidget {
       decoration: BoxDecoration(
         color: PawsBaseTokens.surfaceBright,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+        border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,9 +58,9 @@ class HomePage extends StatelessWidget {
           const SizedBox(height: 32),
           Row(
             children: [
-              _buildStatItem(Icons.pets, "Active Pets", "2", PawsBaseTokens.primaryContainer.withOpacity(0.3), PawsBaseTokens.primaryDark),
+              _buildStatItem(Icons.pets, "Active Pets", "2", PawsBaseTokens.primaryContainer.withValues(alpha: 0.3), PawsBaseTokens.primaryDark),
               const SizedBox(width: 32),
-              _buildStatItem(Icons.workspace_premium, "Mastered", "12", PawsBaseTokens.secondaryContainer.withOpacity(0.3), PawsBaseTokens.secondaryDark),
+              _buildStatItem(Icons.workspace_premium, "Mastered", "12", PawsBaseTokens.secondaryContainer.withValues(alpha: 0.3), PawsBaseTokens.secondaryDark),
             ],
           ),
         ],
@@ -174,7 +174,7 @@ class HomePage extends StatelessWidget {
       decoration: BoxDecoration(
         color: PawsBaseTokens.surfaceBright,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+        border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -226,7 +226,7 @@ class HomePage extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: PawsBaseTokens.outline.withOpacity(0.3),
+            color: PawsBaseTokens.outline.withValues(alpha: 0.3),
             width: 2,
           ),
           color: PawsBaseTokens.surface,
@@ -238,7 +238,7 @@ class HomePage extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
+                color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.add, color: PawsBaseTokens.primaryDark, size: 28),
@@ -269,7 +269,7 @@ class HomePage extends StatelessWidget {
           decoration: BoxDecoration(
             color: PawsBaseTokens.surfaceBright,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+            border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +278,7 @@ class HomePage extends StatelessWidget {
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
+                  color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.vaccines, color: PawsBaseTokens.neutralDark, size: 28),
@@ -329,7 +329,7 @@ class HomePage extends StatelessWidget {
           decoration: BoxDecoration(
             color: PawsBaseTokens.surfaceBright,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+            border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -378,7 +378,7 @@ class HomePage extends StatelessWidget {
                 height: 8,
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  color: PawsBaseTokens.surfaceDim.withOpacity(0.5),
+                  color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: FractionallySizedBox(

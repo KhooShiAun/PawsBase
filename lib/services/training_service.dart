@@ -40,7 +40,7 @@ class TrainingService {
           .select()
           .single();
 
-      return TrainingCommand.fromJson(response as Map<String, dynamic>);
+      return TrainingCommand.fromJson(response);
     } catch (e) {
       rethrow;
     }

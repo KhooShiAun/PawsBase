@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 
 class AddPetPage extends StatefulWidget {
-  const AddPetPage({Key? key}) : super(key: key);
+  const AddPetPage({super.key});
 
   @override
   State<AddPetPage> createState() => _AddPetPageState();
@@ -302,11 +302,11 @@ class _PawsTextInput extends StatelessWidget {
         fillColor: PawsBaseTokens.surfaceBright,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
-          borderSide: BorderSide(color: PawsBaseTokens.outline.withOpacity(0.2)),
+          borderSide: BorderSide(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
-          borderSide: BorderSide(color: PawsBaseTokens.outline.withOpacity(0.2)),
+          borderSide: BorderSide(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
@@ -394,10 +394,10 @@ class _ToggleOption extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? PawsBaseTokens.primaryContainer.withOpacity(0.4) : PawsBaseTokens.surfaceBright,
+          color: isSelected ? PawsBaseTokens.primaryContainer.withValues(alpha: 0.4) : PawsBaseTokens.surfaceBright,
           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
           border: Border.all(
-            color: isSelected ? PawsBaseTokens.primaryDark : PawsBaseTokens.outline.withOpacity(0.2),
+            color: isSelected ? PawsBaseTokens.primaryDark : PawsBaseTokens.outline.withValues(alpha: 0.2),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -447,7 +447,7 @@ class _DatePickerField extends StatelessWidget {
         decoration: BoxDecoration(
           color: PawsBaseTokens.surfaceBright,
           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
-          border: Border.all(color: PawsBaseTokens.outline.withOpacity(0.2)),
+          border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
         ),
         child: Row(
           children: [
