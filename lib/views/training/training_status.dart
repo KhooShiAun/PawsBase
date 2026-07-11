@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 enum TrainingStatus {
   pending('pending', 'Pending', Color(0xFFBA1A1A)), // Muted red
   inProgress('in_progress', 'In Progress', Color(0xFFE6A123)), // Amber
-  mastered('mastered', 'Mastered', Color(0xFF4C644E)); // Primary Dark
+  mastered('mastered', 'Mastered', Color(0xFF4CAF50)); // Vibrant Green
 
   final String value;
   final String label;
