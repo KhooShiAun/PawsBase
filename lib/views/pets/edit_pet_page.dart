@@ -2,30 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:pawsbase/theme/tokens.dart';
+import 'package:pawsbase/views/pets/pet.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
-class AddPetPage extends StatefulWidget {
-  const AddPetPage({super.key});
+class EditPetPage extends StatefulWidget {
+  final Pet pet;
+
+  const EditPetPage({super.key, required this.pet});
 
   @override
-  State<AddPetPage> createState() => _AddPetPageState();
+  State<EditPetPage> createState() => _EditPetPageState();
 }
 
-class _AddPetPageState extends State<AddPetPage> {
+class _EditPetPageState extends State<EditPetPage> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _breedController = TextEditingController();
-  final _weightController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _breedController;
+  late final TextEditingController _weightController;
 
   bool _isLoading = false;
 
-  String _selectedSpecies = 'dog';
-  String _selectedGender = 'male';
-  String _selectedVaccinated = 'no';
-  String _selectedNeutered = 'no';
+  late String _selectedSpecies;
+  late String _selectedGender;
+  late String _selectedVaccinated;
+  late String _selectedNeutered;
   DateTime? _dateOfBirth;
   Uint8List? _petPhotoBytes;
   String? _petPhotoExt;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.pet.name);
+    _breedController = TextEditingController(text: widget.pet.breed ?? '');
+    _weightController = TextEditingController();
+    _selectedSpecies = widget.pet.species;
+    _selectedGender = widget.pet.gender ?? 'male';
+    _selectedVaccinated = (widget.pet.vaccinated ?? false) ? 'yes' : 'no';
+    _selectedNeutered = (widget.pet.neutered ?? false) ? 'yes' : 'no';
+    _dateOfBirth = widget.pet.dateOfBirth;
+  }
 
   Future<void> _pickPhoto() async {
     final picker = ImagePicker();
@@ -44,18 +60,18 @@ class _AddPetPageState extends State<AddPetPage> {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: now,
+      initialDate: _dateOfBirth ?? now,
       firstDate: DateTime(2000),
       lastDate: now,
     );
     if (picked != null) setState(() => _dateOfBirth = picked);
   }
 
-  Future<String?> _uploadPhoto(String petId) async {
+  Future<String?> _uploadPhoto() async {
     if (_petPhotoBytes == null || _petPhotoExt == null) return null;
 
     try {
-      final fileName = '$petId.$_petPhotoExt';
+      final fileName = '${widget.pet.id}.$_petPhotoExt';
 
       await Supabase.instance.client.storage
           .from('pet-photos')
@@ -69,55 +85,45 @@ class _AddPetPageState extends State<AddPetPage> {
           .from('pet-photos')
           .getPublicUrl(fileName);
     } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Photo upload error: $e'),
+            backgroundColor: PawsBaseTokens.error,
+          ),
+        );
+      }
       return null;
     }
   }
 
   Future<void> _submit() async {
     if (_formKey.currentState?.validate() ?? false) {
-      final userId = Supabase.instance.client.auth.currentUser?.id;
-      if (userId == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You must be logged in to add a pet.'),
-            backgroundColor: PawsBaseTokens.error,
-          ),
-        );
-        return;
-      }
-
       setState(() => _isLoading = true);
 
       try {
-        final response = await Supabase.instance.client.from('pets').insert({
-          'owner_id': userId,
+        String? imageUrl = widget.pet.imageUrl;
+
+        if (_petPhotoBytes != null) {
+          imageUrl = await _uploadPhoto();
+        }
+
+        await Supabase.instance.client.from('pets').update({
           'name': _nameController.text.trim(),
           'species': _selectedSpecies,
           'gender': _selectedGender,
           'breed': _breedController.text.trim().isEmpty ? null : _breedController.text.trim(),
-          'weight_kg': _weightController.text.trim().isEmpty ? null : double.tryParse(_weightController.text.trim()),
           'date_of_birth': _dateOfBirth?.toIso8601String(),
           'vaccinated': _selectedVaccinated == 'yes',
           'neutered': _selectedNeutered == 'yes',
-        }).select().single();
-
-        final petId = response['id'] as String;
-
-        if (_petPhotoBytes != null) {
-          final imageUrl = await _uploadPhoto(petId);
-          if (imageUrl != null) {
-            await Supabase.instance.client
-                .from('pets')
-                .update({'image_url': imageUrl})
-                .eq('id', petId);
-          }
-        }
+          if (imageUrl != null) 'image_url': imageUrl,
+        }).eq('id', widget.pet.id);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${_nameController.text} added to the family!',
+                '${_nameController.text} updated successfully!',
                 style: const TextStyle(fontFamily: PawsBaseTokens.fontFamily),
               ),
               backgroundColor: PawsBaseTokens.primaryDark,
@@ -129,7 +135,7 @@ class _AddPetPageState extends State<AddPetPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error adding pet: $e'),
+              content: Text('Error updating pet: $e'),
               backgroundColor: PawsBaseTokens.error,
             ),
           );
@@ -163,7 +169,7 @@ class _AddPetPageState extends State<AddPetPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
-          'Add New Pet',
+          'Edit Pet',
           style: TextStyle(
             fontFamily: PawsBaseTokens.fontFamily,
             fontSize: 24,
@@ -183,21 +189,6 @@ class _AddPetPageState extends State<AddPetPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Center(
-                    child: Text(
-                      "Welcome to the family. Let's start with the basics.",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: PawsBaseTokens.fontFamily,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                        color: PawsBaseTokens.onSurfaceVariant,
-                        height: 1.8,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 32),
-
                   // Photo Upload
                   Center(
                     child: GestureDetector(
@@ -215,36 +206,35 @@ class _AddPetPageState extends State<AddPetPage> {
                         ),
                         clipBehavior: Clip.antiAlias,
                         child: _petPhotoBytes != null
-                            ? Image.memory(
-                                _petPhotoBytes!,
-                                fit: BoxFit.cover,
-                              )
-                            : Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.add_a_photo_outlined,
-                                    size: 32,
-                                    color: PawsBaseTokens.outline.withValues(alpha: 0.6),
+                            ? Image.memory(_petPhotoBytes!, fit: BoxFit.cover)
+                            : widget.pet.imageUrl != null
+                                ? Image.network(widget.pet.imageUrl!, fit: BoxFit.cover)
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.add_a_photo_outlined,
+                                        size: 32,
+                                        color: PawsBaseTokens.outline.withValues(alpha: 0.6),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        'Add Photo',
+                                        style: TextStyle(
+                                          fontFamily: PawsBaseTokens.fontFamily,
+                                          fontSize: 12,
+                                          color: PawsBaseTokens.outline.withValues(alpha: 0.6),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Add Photo',
-                                    style: TextStyle(
-                                      fontFamily: PawsBaseTokens.fontFamily,
-                                      fontSize: 12,
-                                      color: PawsBaseTokens.outline.withValues(alpha: 0.6),
-                                    ),
-                                  ),
-                                ],
-                              ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   const Center(
                     child: Text(
-                      'Add a photo (optional)',
+                      'Tap to change photo',
                       style: TextStyle(
                         fontFamily: PawsBaseTokens.fontFamily,
                         fontSize: 13,
@@ -297,15 +287,6 @@ class _AddPetPageState extends State<AddPetPage> {
                   _PawsTextInput(
                     controller: _breedController,
                     hintText: 'E.g., Golden Retriever',
-                  ),
-                  const SizedBox(height: 20),
-
-                  _FieldLabel('Weight (kg)'),
-                  const SizedBox(height: 8),
-                  _PawsTextInput(
-                    controller: _weightController,
-                    hintText: 'E.g., 12.5',
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   ),
                   const SizedBox(height: 20),
 
@@ -365,14 +346,14 @@ class _AddPetPageState extends State<AddPetPage> {
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                             )
                           : const Text(
-                              'Add to Family',
+                              'Save Changes',
                               style: TextStyle(
                                 fontFamily: PawsBaseTokens.fontFamily,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                      icon: _isLoading ? const SizedBox() : const Icon(Icons.favorite_rounded, size: 20),
+                      icon: _isLoading ? const SizedBox() : const Icon(Icons.save_rounded, size: 20),
                       iconAlignment: IconAlignment.end,
                     ),
                   ),
@@ -533,10 +514,14 @@ class _ToggleOption extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.symmetric(vertical: 14),
         decoration: BoxDecoration(
-          color: isSelected ? PawsBaseTokens.primaryContainer.withValues(alpha: 0.4) : PawsBaseTokens.surfaceBright,
+          color: isSelected
+              ? PawsBaseTokens.primaryContainer.withValues(alpha: 0.4)
+              : PawsBaseTokens.surfaceBright,
           borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
           border: Border.all(
-            color: isSelected ? PawsBaseTokens.primaryDark : PawsBaseTokens.outline.withValues(alpha: 0.2),
+            color: isSelected
+                ? PawsBaseTokens.primaryDark
+                : PawsBaseTokens.outline.withValues(alpha: 0.2),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -596,7 +581,9 @@ class _DatePickerField extends StatelessWidget {
                 style: TextStyle(
                   fontFamily: PawsBaseTokens.fontFamily,
                   fontSize: 16,
-                  color: selectedDate == null ? PawsBaseTokens.neutral : PawsBaseTokens.onSurface,
+                  color: selectedDate == null
+                      ? PawsBaseTokens.neutral
+                      : PawsBaseTokens.onSurface,
                 ),
               ),
             ),

@@ -34,9 +34,8 @@ class PawsBottomNav extends StatelessWidget {
           children: [
             _buildNavItem(context, 0, Icons.home_outlined, Icons.home, 'Home'),
             _buildNavItem(context, 1, Icons.pets, Icons.pets, 'Pets'),
-            _buildNavItem(context, 2, Icons.monitor_heart, Icons.monitor_heart, 'Health'),
-            _buildNavItem(context, 3, Icons.fitness_center, Icons.fitness_center, 'Training'),
-            _buildNavItem(context, 4, Icons.settings_outlined, Icons.settings, 'Settings'),
+            _buildNavItem(context, 2, Icons.fitness_center, Icons.fitness_center, 'Training'),
+            _buildNavItem(context, 3, Icons.settings_outlined, Icons.settings, 'Settings'),
           ],
         ),
       ),
@@ -54,17 +53,15 @@ class PawsBottomNav extends StatelessWidget {
     final colorScheme = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Active container color: sage green
-    final activeBgColor = isDark 
-        ? colorScheme.primaryContainer 
+    final activeBgColor = isDark
+        ? colorScheme.primaryContainer
         : PawsBaseTokens.primaryContainer.withValues(alpha: 0.7);
-    final activeTextColor = isDark 
-        ? colorScheme.onPrimaryContainer 
+    final activeTextColor = isDark
+        ? colorScheme.onPrimaryContainer
         : PawsBaseTokens.primaryDark;
 
-    // Inactive text/icon color: neutral gray-green
-    final inactiveColor = isDark 
-        ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6) 
+    final inactiveColor = isDark
+        ? colorScheme.onSurfaceVariant.withValues(alpha: 0.6)
         : PawsBaseTokens.neutral;
 
     return GestureDetector(

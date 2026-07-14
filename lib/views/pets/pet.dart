@@ -4,6 +4,10 @@ class Pet {
   final String species;
   final String? breed;
   final String? imageUrl;
+  final String? gender;
+  final DateTime? dateOfBirth;
+  final bool? vaccinated;
+  final bool? neutered;
 
   const Pet({
     required this.id,
@@ -11,6 +15,10 @@ class Pet {
     required this.species,
     this.breed,
     this.imageUrl,
+    this.gender,
+    this.dateOfBirth,
+    this.vaccinated,
+    this.neutered,
   });
 
   factory Pet.fromJson(Map<String, dynamic> json) {
@@ -20,6 +28,12 @@ class Pet {
       species: json['species'] as String,
       breed: json['breed'] as String?,
       imageUrl: json['image_url'] as String?,
+      gender: json['gender'] as String?,
+      dateOfBirth: json['date_of_birth'] != null
+          ? DateTime.tryParse(json['date_of_birth'] as String)
+          : null,
+      vaccinated: json['vaccinated'] as bool?,
+      neutered: json['neutered'] as bool?,
     );
   }
 
@@ -30,6 +44,10 @@ class Pet {
       'species': species,
       'breed': breed,
       'image_url': imageUrl,
+      'gender': gender,
+      'date_of_birth': dateOfBirth?.toIso8601String(),
+      'vaccinated': vaccinated,
+      'neutered': neutered,
     };
   }
 }
