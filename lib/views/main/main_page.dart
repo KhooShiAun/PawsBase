@@ -50,23 +50,6 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
         centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 20.0),
-          child: Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(color: colorScheme.outline.withValues(alpha: 0.2)),
-            ),
-            child: CircleAvatar(
-              backgroundColor: PawsBaseTokens.secondaryContainer,
-              backgroundImage: NetworkImage(
-                Supabase.instance.client.auth.currentUser?.userMetadata?['avatar_url'] ??
-                'https://lh3.googleusercontent.com/aida-public/AB6AXuCWw7Q21E5d946zOBAOb-YuUz-WP_pC6uGH0qJcndRsjgO5wpNDD4IC5gXPMBaNrJA7HLcmSrxITTROROmS-p6IwuvmFkJ-ypy_KbSFwUzbh_nwRaEKNbYitSH0mPPPXusYU-EolReFRKqsZFEVrEQuTOblMboYQ0UY8eVrKRea5EThTsPcH1IXHbig-EygDsLl4Iyn0-EqoFi4IHqDVqvSpMBXToJTh2mfOTMKvp_gZDrMex1ya3MKWHKYXVrL4X2cLQfkMRUBg4Cb',
-              ),
-            ),
-          ),
-        ),
-        leadingWidth: 60,
       ),
       body: IndexedStack(
         index: _currentIndex,
@@ -261,12 +244,15 @@ class _PetsPageState extends State<_PetsPage> {
                           species: pet.species,
                           breed: pet.breed,
                           imageUrl: pet.imageUrl,
-                          onTap: () {
-                            Navigator.of(context).push(
+                          onTap: () async {
+                            final result = await Navigator.of(context).push(
                               MaterialPageRoute(
                                 builder: (_) => PetDetailPage(pet: pet),
                               ),
                             );
+                            if (result == true) {
+                              _fetchPets();
+                            }
                           },
                         );
                       },

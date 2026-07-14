@@ -148,6 +148,137 @@ class _EditPetPageState extends State<EditPetPage> {
     }
   }
 
+  Future<void> _showDeleteConfirmation() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: PawsBaseTokens.surfaceBright,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: PawsBaseTokens.error, size: 28),
+              SizedBox(width: 12),
+              Text(
+                'Delete Pet',
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontWeight: FontWeight.w700,
+                  color: PawsBaseTokens.error,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to delete ${widget.pet.name}? This action cannot be undone and all associated health logs and training data will be permanently removed.',
+            style: const TextStyle(
+              fontFamily: PawsBaseTokens.fontFamily,
+              fontSize: 15,
+              color: PawsBaseTokens.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontWeight: FontWeight.w600,
+                  color: PawsBaseTokens.onSurfaceVariant,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: PawsBaseTokens.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text(
+                'Delete',
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _deletePet();
+    }
+  }
+
+  Future<void> _deletePet() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Delete associated health logs first
+      await Supabase.instance.client
+          .from('health_logs')
+          .delete()
+          .eq('pet_id', widget.pet.id);
+
+      // Delete associated training commands
+      await Supabase.instance.client
+          .from('training_commands')
+          .delete()
+          .eq('pet_id', widget.pet.id);
+
+      // Delete the pet photo from storage if it exists
+      if (widget.pet.imageUrl != null) {
+        try {
+          final uri = Uri.parse(widget.pet.imageUrl!);
+          final fileName = uri.pathSegments.last;
+          await Supabase.instance.client.storage
+              .from('pet-photos')
+              .remove([fileName]);
+        } catch (_) {
+          // Photo cleanup is best-effort
+        }
+      }
+
+      // Delete the pet record
+      await Supabase.instance.client
+          .from('pets')
+          .delete()
+          .eq('id', widget.pet.id);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '${widget.pet.name} has been deleted.',
+              style: const TextStyle(fontFamily: PawsBaseTokens.fontFamily),
+            ),
+            backgroundColor: PawsBaseTokens.primaryDark,
+          ),
+        );
+        // Pop twice: once for EditPetPage, once for PetDetailPage
+        Navigator.of(context).pop('deleted');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error deleting pet: $e'),
+            backgroundColor: PawsBaseTokens.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -355,6 +486,32 @@ class _EditPetPageState extends State<EditPetPage> {
                             ),
                       icon: _isLoading ? const SizedBox() : const Icon(Icons.save_rounded, size: 20),
                       iconAlignment: IconAlignment.end,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Delete Pet Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: _isLoading ? null : _showDeleteConfirmation,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: PawsBaseTokens.error,
+                        side: const BorderSide(color: PawsBaseTokens.error, width: 1.5),
+                        padding: const EdgeInsets.symmetric(vertical: 18),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
+                        ),
+                      ),
+                      icon: const Icon(Icons.delete_forever_rounded, size: 20),
+                      label: const Text(
+                        'Delete Pet',
+                        style: TextStyle(
+                          fontFamily: PawsBaseTokens.fontFamily,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 32),

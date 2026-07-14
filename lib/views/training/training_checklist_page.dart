@@ -173,6 +173,92 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
     }
   }
 
+  Future<void> _showEditCommandDialog(TrainingCommand command) async {
+    final nameController = TextEditingController(text: command.name);
+    final sessionsController = TextEditingController(text: command.sessionsNeeded.toString());
+    Pet? selectedPet = _pets.where((p) => p.id == command.petId).firstOrNull;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: PawsBaseTokens.surfaceBright,
+              title: const Text('Edit Training', style: TextStyle(fontFamily: PawsBaseTokens.fontFamily)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Training Name'),
+                    ),
+                    const SizedBox(height: 16),
+                    if (_pets.isNotEmpty)
+                      DropdownButtonFormField<Pet>(
+                        initialValue: selectedPet,
+                        decoration: const InputDecoration(labelText: 'Select Pet'),
+                        items: _pets.map((pet) {
+                          return DropdownMenuItem(
+                            value: pet,
+                            child: Text(pet.name),
+                          );
+                        }).toList(),
+                        onChanged: (Pet? value) {
+                          setDialogState(() {
+                            selectedPet = value;
+                          });
+                        },
+                      ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: sessionsController,
+                      decoration: const InputDecoration(labelText: 'Sessions Needed'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true && nameController.text.isNotEmpty) {
+      final name = nameController.text.trim();
+      final sessions = int.tryParse(sessionsController.text.trim()) ?? command.sessionsNeeded;
+      
+      // Prevent making sessions needed less than completed sessions
+      final validSessions = sessions < command.completedSessions ? command.completedSessions : sessions;
+      final petId = selectedPet?.id ?? command.petId;
+
+      try {
+        await _trainingService.updateCommand(command.id, petId ?? '', name, validSessions);
+        _loadCommands(); // reload list
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update command: $e'),
+            backgroundColor: PawsBaseTokens.error,
+          ),
+        );
+      }
+    }
+  }
+
   Future<void> _completeSession(TrainingCommand command) async {
     if (command.completedSessions >= command.sessionsNeeded) return;
     
@@ -258,14 +344,36 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          currentCommand.name,
-                          style: TextStyle(
-                            fontFamily: PawsBaseTokens.fontFamily,
-                            fontSize: 28,
-                            fontWeight: FontWeight.w800,
-                            color: colorScheme.onSurface,
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                currentCommand.name,
+                                style: TextStyle(
+                                  fontFamily: PawsBaseTokens.fontFamily,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w800,
+                                  color: colorScheme.onSurface,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                await _showEditCommandDialog(currentCommand);
+                              },
+                              icon: const Icon(Icons.edit_outlined, color: PawsBaseTokens.primaryDark),
+                              tooltip: 'Edit Training',
+                            ),
+                            IconButton(
+                              onPressed: () {
+                                Navigator.pop(context);
+                                _showDeleteTrainingConfirmation(currentCommand);
+                              },
+                              icon: const Icon(Icons.delete_outline_rounded, color: PawsBaseTokens.error),
+                              tooltip: 'Delete Training',
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 12),
                         Row(
@@ -370,6 +478,96 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
         );
       },
     );
+  }
+
+  Future<void> _showDeleteTrainingConfirmation(TrainingCommand command) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: PawsBaseTokens.surfaceBright,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.warning_amber_rounded, color: PawsBaseTokens.error, size: 28),
+              SizedBox(width: 12),
+              Text(
+                'Delete Training',
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontWeight: FontWeight.w700,
+                  color: PawsBaseTokens.error,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to delete "${command.name}"? This action cannot be undone.',
+            style: const TextStyle(
+              fontFamily: PawsBaseTokens.fontFamily,
+              fontSize: 15,
+              color: PawsBaseTokens.onSurfaceVariant,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text(
+                'Cancel',
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontWeight: FontWeight.w600,
+                  color: PawsBaseTokens.onSurfaceVariant,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: PawsBaseTokens.error,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+              child: const Text(
+                'Delete',
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      try {
+        await _trainingService.deleteCommand(command.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '"${command.name}" has been deleted.',
+                style: const TextStyle(fontFamily: PawsBaseTokens.fontFamily),
+              ),
+              backgroundColor: PawsBaseTokens.primaryDark,
+            ),
+          );
+          _loadCommands(); // refresh the list
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting training: $e'),
+              backgroundColor: PawsBaseTokens.error,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildTimelineItem({

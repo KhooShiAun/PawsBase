@@ -101,4 +101,32 @@ class TrainingService {
       rethrow;
     }
   }
+
+  // Delete a training command
+  Future<void> deleteCommand(String id) async {
+    try {
+      await _supabase
+          .from('training_commands')
+          .delete()
+          .eq('id', id);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Update a training command details
+  Future<void> updateCommand(String id, String petId, String name, int sessionsNeeded) async {
+    try {
+      await _supabase
+          .from('training_commands')
+          .update({
+            'pet_id': petId,
+            'name': name,
+            'sessions_needed': sessionsNeeded,
+          })
+          .eq('id', id);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }
