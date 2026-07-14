@@ -16,11 +16,35 @@ class PetDetailPage extends StatefulWidget {
 
 class _PetDetailPageState extends State<PetDetailPage> {
   late Pet _pet;
+  List<Map<String, dynamic>> _healthLogs = [];
+  bool _isLoadingLogs = true;
 
   @override
   void initState() {
     super.initState();
     _pet = widget.pet;
+    _fetchHealthLogs();
+  }
+
+  Future<void> _fetchHealthLogs() async {
+    setState(() => _isLoadingLogs = true);
+    try {
+      final data = await Supabase.instance.client
+          .from('health_logs')
+          .select()
+          .eq('pet_id', _pet.id)
+          .order('record_date', ascending: false);
+      if (mounted) {
+        setState(() {
+          _healthLogs = List<Map<String, dynamic>>.from(data);
+          _isLoadingLogs = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingLogs = false);
+      }
+    }
   }
 
   Future<void> _refreshPet() async {
@@ -270,7 +294,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: _showAddEntryDialog,
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text("Add Entry"),
                   style: ElevatedButton.styleFrom(
@@ -293,48 +317,66 @@ class _PetDetailPageState extends State<PetDetailPage> {
             const SizedBox(height: 32),
 
             // Timeline
-            _buildTimelineItem(
-              icon: Icons.vaccines,
-              iconColor: PawsBaseTokens.primaryDark,
-              title: "Annual Vaccination",
-              date: "Oct 12, 2023",
-              subtitle: "Dr. Smith Clinic",
-              description: "Administered DHPP and Rabies booster. ${_pet.name} was very well behaved. Next due in 1 year.",
-              isLast: false,
-              child: _buildChipWithIcon(Icons.receipt_long, "Invoice"),
-            ),
-            _buildTimelineItem(
-              icon: Icons.medical_services,
-              iconColor: PawsBaseTokens.secondaryDark,
-              title: "Routine Checkup",
-              date: "Jun 05, 2023",
-              subtitle: "General Health",
-              description: "Overall health is excellent. Teeth looking good, recommended continuing current dental chews.",
-              isLast: false,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
+            if (_isLoadingLogs)
+              const Center(child: CircularProgressIndicator())
+            else if (_healthLogs.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Center(
+                  child: Text(
+                    "No health records yet.",
+                    style: TextStyle(
+                      fontFamily: PawsBaseTokens.fontFamily,
+                      fontSize: 16,
+                      color: PawsBaseTokens.onSurfaceVariant,
+                    ),
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    _buildStatBlock("Weight", "12.4 kg"),
-                    const SizedBox(width: 24),
-                    _buildStatBlock("Temp", "101.2°F"),
-                  ],
-                ),
-              ),
-            ),
-            _buildTimelineItem(
-              icon: Icons.pest_control,
-              iconColor: PawsBaseTokens.neutralDark,
-              title: "Flea & Tick Prevention",
-              date: "Mar 15, 2023",
-              subtitle: "Medication",
-              description: "Administered monthly topical treatment. Set reminder for next dose.",
-              isLast: true,
-            ),
+              )
+            else
+              ..._healthLogs.asMap().entries.map((entry) {
+                final index = entry.key;
+                final log = entry.value;
+                final isLast = index == _healthLogs.length - 1;
+
+                IconData icon;
+                Color iconColor;
+                switch (log['type']) {
+                  case 'vaccination':
+                    icon = Icons.vaccines;
+                    iconColor = PawsBaseTokens.primaryDark;
+                    break;
+                  case 'checkup':
+                    icon = Icons.medical_services;
+                    iconColor = PawsBaseTokens.secondaryDark;
+                    break;
+                  case 'medication':
+                    icon = Icons.pest_control;
+                    iconColor = PawsBaseTokens.neutralDark;
+                    break;
+                  case 'training':
+                    icon = Icons.fitness_center;
+                    iconColor = PawsBaseTokens.secondaryDark;
+                    break;
+                  default:
+                    icon = Icons.health_and_safety;
+                    iconColor = PawsBaseTokens.primaryDark;
+                }
+
+                // parse date
+                DateTime date = DateTime.tryParse(log['record_date'] ?? '') ?? DateTime.now();
+                String formattedDate = "${date.month}/${date.day}/${date.year}";
+
+                return _buildTimelineItem(
+                  icon: icon,
+                  iconColor: iconColor,
+                  title: log['log_title'] ?? log['title'] ?? 'Record',
+                  date: log['record_date']?.substring(0, 10) ?? formattedDate,
+                  subtitle: log['subtitle'] ?? 'General',
+                  description: log['description'] ?? '',
+                  isLast: isLast,
+                );
+              }),
 
             const SizedBox(height: 48),
 
@@ -617,5 +659,96 @@ class _PetDetailPageState extends State<PetDetailPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _showAddEntryDialog() async {
+    final titleController = TextEditingController();
+    final subtitleController = TextEditingController();
+    final descController = TextEditingController();
+    String selectedType = 'checkup';
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: PawsBaseTokens.surfaceBright,
+              title: const Text('Add Health Log Entry', style: TextStyle(fontFamily: PawsBaseTokens.fontFamily)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: const InputDecoration(labelText: 'Entry Type'),
+                      items: const [
+                        DropdownMenuItem(value: 'checkup', child: Text('Routine Checkup')),
+                        DropdownMenuItem(value: 'vaccination', child: Text('Vaccination')),
+                        DropdownMenuItem(value: 'medication', child: Text('Medication')),
+                        DropdownMenuItem(value: 'other', child: Text('Other')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => selectedType = val);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title (e.g. Annual Checkup)'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: subtitleController,
+                      decoration: const InputDecoration(labelText: 'Subtitle (e.g. Vet Clinic Name)'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descController,
+                      decoration: const InputDecoration(labelText: 'Notes/Description'),
+                      maxLines: 3,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true && titleController.text.isNotEmpty) {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      try {
+        await Supabase.instance.client.from('health_logs').insert({
+          'user_id': userId,
+          'pet_id': _pet.id,
+          'log_title': titleController.text.trim(),
+          'subtitle': subtitleController.text.trim(),
+          'description': descController.text.trim(),
+          'type': selectedType,
+          'record_date': DateTime.now().toIso8601String(),
+        });
+        _fetchHealthLogs(); // refresh timeline
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving log: $e'), backgroundColor: PawsBaseTokens.error),
+          );
+        }
+      }
+    }
   }
 }

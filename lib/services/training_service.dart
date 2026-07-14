@@ -74,11 +74,11 @@ class TrainingService {
         await _supabase.from('health_logs').insert({
           'user_id': userId,
           'pet_id': petId,
-          'title': 'Training Completed',
+          'log_title': 'Training Completed',
           'subtitle': commandName ?? 'Training Session',
           'description': 'Completed session ${currentCompleted + 1} for $commandName.',
           'type': 'training',
-          'date': DateTime.now().toIso8601String(),
+          'record_date': DateTime.now().toIso8601String(),
         });
       } catch (e) {
         // Handle if table doesn't exist
