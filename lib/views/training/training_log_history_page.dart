@@ -1,11 +1,61 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 import 'package:pawsbase/views/pets/pet.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:pawsbase/views/training/training_command.dart';
+import 'package:pawsbase/views/training/training_status.dart';
 
-class TrainingLogHistoryPage extends StatelessWidget {
+class TrainingLogHistoryPage extends StatefulWidget {
   final Pet pet;
 
   const TrainingLogHistoryPage({super.key, required this.pet});
+
+  @override
+  State<TrainingLogHistoryPage> createState() => _TrainingLogHistoryPageState();
+}
+
+class _TrainingLogHistoryPageState extends State<TrainingLogHistoryPage> {
+  bool _isLoading = true;
+  List<TrainingCommand> _commands = [];
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHistory();
+  }
+
+  Future<void> _fetchHistory() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await Supabase.instance.client
+          .from('training_commands')
+          .select()
+          .eq('pet_id', widget.pet.id)
+          .order('created_at', ascending: false);
+
+      final List<dynamic> data = response as List<dynamic>;
+      final commands = data.map((json) => TrainingCommand.fromJson(json as Map<String, dynamic>)).toList();
+      
+      if (mounted) {
+        setState(() {
+          _commands = commands;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = "Failed to load history.";
+          _isLoading = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +70,7 @@ class TrainingLogHistoryPage extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          "${pet.name}'s Training History",
+          "${widget.pet.name}'s Training History",
           style: const TextStyle(
             fontFamily: PawsBaseTokens.fontFamily,
             fontSize: 20,
@@ -30,13 +80,42 @@ class TrainingLogHistoryPage extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: SingleChildScrollView(
+      body: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_errorMessage!, style: const TextStyle(color: PawsBaseTokens.error)),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _fetchHistory,
+              child: const Text("Retry"),
+            )
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchHistory,
+      color: PawsBaseTokens.primaryDark,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "${pet.name}'s Training Log",
+              "${widget.pet.name}'s Training Log",
               style: const TextStyle(
                 fontFamily: PawsBaseTokens.fontFamily,
                 fontSize: 32,
@@ -46,9 +125,9 @@ class TrainingLogHistoryPage extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 8),
-            Text(
-              "A record of all completed training sessions.",
-              style: const TextStyle(
+            const Text(
+              "A record of all training sessions.",
+              style: TextStyle(
                 fontFamily: PawsBaseTokens.fontFamily,
                 fontSize: 16,
                 color: PawsBaseTokens.onSurfaceVariant,
@@ -56,41 +135,35 @@ class TrainingLogHistoryPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            _buildSessionCard(
-              command: "Sit",
-              date: "Jul 5, 2026",
-              duration: "10 mins",
-              result: "Mastered",
-              resultColor: PawsBaseTokens.primaryDark,
-              notes: "${pet.name} responded consistently without prompting.",
-            ),
-            const SizedBox(height: 16),
-            _buildSessionCard(
-              command: "Stay",
-              date: "Jul 3, 2026",
-              duration: "15 mins",
-              result: "In Progress",
-              resultColor: PawsBaseTokens.secondaryDark,
-              notes: "Holding position for up to 10 seconds. Needs more distance practice.",
-            ),
-            const SizedBox(height: 16),
-            _buildSessionCard(
-              command: "Heel",
-              date: "Jun 28, 2026",
-              duration: "20 mins",
-              result: "In Progress",
-              resultColor: PawsBaseTokens.secondaryDark,
-              notes: "Loose leash walking improving. Still gets distracted by other dogs.",
-            ),
-            const SizedBox(height: 16),
-            _buildSessionCard(
-              command: "Come",
-              date: "Jun 20, 2026",
-              duration: "10 mins",
-              result: "Mastered",
-              resultColor: PawsBaseTokens.primaryDark,
-              notes: "Reliable recall in both indoor and outdoor environments.",
-            ),
+            if (_commands.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.only(top: 48.0),
+                  child: Text(
+                    "No training history yet.",
+                    style: TextStyle(
+                      fontFamily: PawsBaseTokens.fontFamily,
+                      fontSize: 16,
+                      color: PawsBaseTokens.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              )
+            else
+              ..._commands.map((cmd) {
+                final isMastered = cmd.status == TrainingStatus.mastered;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: _buildSessionCard(
+                    command: cmd.name,
+                    date: "Sessions: ${cmd.completedSessions} / ${cmd.sessionsNeeded}",
+                    duration: cmd.category,
+                    result: cmd.status.name.toUpperCase(),
+                    resultColor: isMastered ? PawsBaseTokens.primaryDark : PawsBaseTokens.secondaryDark,
+                    notes: cmd.description,
+                  ),
+                );
+              }),
             const SizedBox(height: 32),
           ],
         ),
@@ -149,7 +222,7 @@ class TrainingLogHistoryPage extends StatelessWidget {
           const SizedBox(height: 8),
           Row(
             children: [
-              const Icon(Icons.calendar_today_outlined, size: 14, color: PawsBaseTokens.outline),
+              const Icon(Icons.check_circle_outline, size: 14, color: PawsBaseTokens.outline),
               const SizedBox(width: 6),
               Text(
                 date,
@@ -160,7 +233,7 @@ class TrainingLogHistoryPage extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 16),
-              const Icon(Icons.timer_outlined, size: 14, color: PawsBaseTokens.outline),
+              const Icon(Icons.category_outlined, size: 14, color: PawsBaseTokens.outline),
               const SizedBox(width: 6),
               Text(
                 duration,

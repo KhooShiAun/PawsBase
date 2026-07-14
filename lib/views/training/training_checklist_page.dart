@@ -4,7 +4,8 @@ import '../../services/training_service.dart';
 import 'training_command.dart';
 import 'training_status.dart';
 import 'training_config.dart';
-import '../pets/pet.dart'; // Add pet import
+import '../pets/pet.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TrainingChecklistPage extends StatefulWidget {
   const TrainingChecklistPage({super.key});
@@ -21,11 +22,7 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  // Dummy pets for selector since there is no centralized PetService
-  final List<Pet> _dummyPets = [
-    const Pet(id: '11111111-1111-1111-1111-111111111111', name: 'Bella', species: 'Dog', breed: 'Golden Retriever', imageUrl: null),
-    const Pet(id: '22222222-2222-2222-2222-222222222222', name: 'Luna', species: 'Cat', breed: 'Siamese', imageUrl: null),
-  ];
+  List<Pet> _pets = [];
 
   @override
   void initState() {
@@ -46,8 +43,12 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
     });
 
     try {
+      final petsData = await Supabase.instance.client.from('pets').select();
+      final petsList = (petsData as List).map((json) => Pet.fromJson(json)).toList();
+
       final data = await _trainingService.fetchCommands();
       setState(() {
+        _pets = petsList;
         _commands = data;
       });
     } catch (e) {
@@ -86,7 +87,7 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
   Future<void> _showAddCommandDialog() async {
     final nameController = TextEditingController();
     final sessionsController = TextEditingController(text: '1');
-    Pet? selectedPet = _dummyPets.isNotEmpty ? _dummyPets.first : null;
+    Pet? selectedPet = _pets.isNotEmpty ? _pets.first : null;
 
     final result = await showDialog<bool>(
       context: context,
@@ -108,7 +109,7 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
                     DropdownButtonFormField<Pet>(
                       initialValue: selectedPet,
                       decoration: const InputDecoration(labelText: 'Select Pet'),
-                      items: _dummyPets.map((pet) {
+                      items: _pets.map((pet) {
                         return DropdownMenuItem(
                           value: pet,
                           child: Text(pet.name),
@@ -549,9 +550,18 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
       return 0;
     });
 
-    return Container(
-      color: PawsBaseTokens.surface,
-      child: SafeArea(
+    return Scaffold(
+      backgroundColor: PawsBaseTokens.surface,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddCommandDialog,
+        backgroundColor: PawsBaseTokens.primaryDark,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+      body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
           onRefresh: _loadCommands,
@@ -613,9 +623,7 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
 
                 const SizedBox(height: 24),
 
-                // Add command input row
-                _buildAddCommandInput(colorScheme),
-                const SizedBox(height: 24), // Bottom buffer
+                const SizedBox(height: 80), // Bottom buffer for FAB
               ],
             ),
           ),
@@ -662,7 +670,7 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
 
   Widget _buildCommandCard(TrainingCommand command, ColorScheme colorScheme) {
     // Find pet name if available in our dummy list
-    final pet = _dummyPets.where((p) => p.id == command.petId).firstOrNull;
+    final pet = _pets.where((p) => p.id == command.petId).firstOrNull;
     final petName = pet?.name ?? 'Unknown Pet';
 
     return GestureDetector(

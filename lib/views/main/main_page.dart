@@ -80,7 +80,7 @@ class _MainPageState extends State<MainPage> {
                 );
                 if (result == true) {
                   setState(() {
-                    _pages[1] = const _PetsPage();
+                    _pages[1] = _PetsPage(key: UniqueKey());
                   });
                 }
               },
@@ -105,7 +105,7 @@ class _MainPageState extends State<MainPage> {
 }
 
 class _PetsPage extends StatefulWidget {
-  const _PetsPage();
+  const _PetsPage({super.key});
 
   @override
   State<_PetsPage> createState() => _PetsPageState();
