@@ -1,56 +1,183 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 import 'package:pawsbase/views/pets/pet.dart';
+import 'package:pawsbase/views/pets/edit_pet_page.dart';
 import 'package:pawsbase/views/training/training_log_history_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class HealthLogPage extends StatelessWidget {
-  final Pet? pet;
+class PetDetailPage extends StatefulWidget {
+  final Pet pet;
 
-  const HealthLogPage({super.key, this.pet});
+  const PetDetailPage({super.key, required this.pet});
+
+  @override
+  State<PetDetailPage> createState() => _PetDetailPageState();
+}
+
+class _PetDetailPageState extends State<PetDetailPage> {
+  late Pet _pet;
+
+  @override
+  void initState() {
+    super.initState();
+    _pet = widget.pet;
+  }
+
+  Future<void> _refreshPet() async {
+    try {
+      final data = await Supabase.instance.client
+          .from('pets')
+          .select()
+          .eq('id', _pet.id)
+          .single();
+      if (mounted) {
+        setState(() {
+          _pet = Pet.fromJson(data);
+        });
+      }
+    } catch (e) {
+      // Keep existing pet data if refresh fails
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (pet == null) {
-      return _buildEmptyState();
-    }
-
-    return Container(
-      color: PawsBaseTokens.surface,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+    return Scaffold(
+      backgroundColor: PawsBaseTokens.surface,
+      appBar: AppBar(
+        backgroundColor: PawsBaseTokens.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: PawsBaseTokens.onSurfaceVariant),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          _pet.name,
+          style: const TextStyle(
+            fontFamily: PawsBaseTokens.fontFamily,
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: PawsBaseTokens.primaryDark,
+          ),
+        ),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined, color: PawsBaseTokens.onSurfaceVariant),
+            tooltip: 'Edit Pet',
+            onPressed: () async {
+              final result = await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => EditPetPage(pet: _pet),
+                ),
+              );
+              if (result == true) {
+                await _refreshPet();
+              }
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Pet Profile Section
+            Center(
+              child: Column(
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: PawsBaseTokens.surfaceDim,
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: _pet.imageUrl != null
+                        ? Image.network(_pet.imageUrl!, fit: BoxFit.cover)
+                        : const Icon(Icons.pets, size: 48, color: PawsBaseTokens.primaryDark),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    _pet.name,
+                    style: const TextStyle(
+                      fontFamily: PawsBaseTokens.fontFamily,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w700,
+                      color: PawsBaseTokens.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      if (_pet.breed != null)
+                        _buildChip(_pet.breed!, PawsBaseTokens.secondaryContainer, PawsBaseTokens.onSecondaryContainer),
+                      if (_pet.breed != null) const SizedBox(width: 8),
+                      _buildChip(_pet.species, PawsBaseTokens.surfaceDim, PawsBaseTokens.onSurfaceVariant),
+                      if (_pet.gender != null) const SizedBox(width: 8),
+                      if (_pet.gender != null)
+                        _buildChip(_pet.gender!, PawsBaseTokens.primaryContainer, PawsBaseTokens.onPrimaryContainer),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 32),
+
+            // Pet Info Cards
+            Row(
+              children: [
+                if (_pet.vaccinated != null)
+                  Expanded(
+                    child: _buildInfoCard(
+                      icon: Icons.vaccines,
+                      label: 'Vaccinated',
+                      value: _pet.vaccinated! ? 'Yes' : 'No',
+                      valueColor: _pet.vaccinated! ? PawsBaseTokens.primaryDark : PawsBaseTokens.neutral,
+                    ),
+                  ),
+                if (_pet.vaccinated != null && _pet.neutered != null)
+                  const SizedBox(width: 12),
+                if (_pet.neutered != null)
+                  Expanded(
+                    child: _buildInfoCard(
+                      icon: Icons.medical_services_outlined,
+                      label: 'Neutered/Spayed',
+                      value: _pet.neutered! ? 'Yes' : 'No',
+                      valueColor: _pet.neutered! ? PawsBaseTokens.primaryDark : PawsBaseTokens.neutral,
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 48),
+
+            // Health Log Section
             Text(
-              "${pet!.name}'s Health Log",
+              "Health Log",
               style: TextStyle(
                 fontFamily: PawsBaseTokens.fontFamily,
-                fontSize: 32,
+                fontSize: 24,
                 fontWeight: FontWeight.w700,
                 color: PawsBaseTokens.onSurface,
                 height: 1.2,
               ),
             ),
             const SizedBox(height: 8),
-            Row(
-              children: [
-                if (pet!.breed != null)
-                  _buildChip(pet!.breed!, PawsBaseTokens.secondaryContainer, PawsBaseTokens.onSecondaryContainer),
-                if (pet!.breed != null) const SizedBox(width: 8),
-                _buildChip(pet!.species, PawsBaseTokens.surfaceDim, PawsBaseTokens.onSurfaceVariant),
-              ],
-            ),
-            const SizedBox(height: 16),
             Text(
               "Medical history and wellness tracking.",
               style: TextStyle(
                 fontFamily: PawsBaseTokens.fontFamily,
-                fontSize: 18,
+                fontSize: 16,
                 color: PawsBaseTokens.onSurfaceVariant,
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 24),
 
+            // Weight Card
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -112,47 +239,32 @@ class HealthLogPage extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: PawsBaseTokens.primaryContainer.withValues(alpha: 0.3),
-                          borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: PawsBaseTokens.primaryContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadiusPill),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.trending_up, color: PawsBaseTokens.primaryDark, size: 16),
+                        const SizedBox(width: 4),
+                        Text(
+                          "Stable",
+                          style: TextStyle(
+                            fontFamily: PawsBaseTokens.fontFamily,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: PawsBaseTokens.primaryDark,
+                          ),
                         ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.trending_up, color: PawsBaseTokens.primaryDark, size: 16),
-                            const SizedBox(width: 4),
-                            Text(
-                              "Stable",
-                              style: TextStyle(
-                                fontFamily: PawsBaseTokens.fontFamily,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: PawsBaseTokens.primaryDark,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        "Oct 12",
-                        style: TextStyle(
-                          fontFamily: PawsBaseTokens.fontFamily,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PawsBaseTokens.outline,
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 24),
 
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
@@ -180,13 +292,14 @@ class HealthLogPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
+            // Timeline
             _buildTimelineItem(
               icon: Icons.vaccines,
               iconColor: PawsBaseTokens.primaryDark,
               title: "Annual Vaccination",
               date: "Oct 12, 2023",
               subtitle: "Dr. Smith Clinic",
-              description: "Administered DHPP and Rabies booster. ${pet!.name} was very well behaved. Next due in 1 year.",
+              description: "Administered DHPP and Rabies booster. ${_pet.name} was very well behaved. Next due in 1 year.",
               isLast: false,
               child: _buildChipWithIcon(Icons.receipt_long, "Invoice"),
             ),
@@ -232,7 +345,7 @@ class HealthLogPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => TrainingLogHistoryPage(pet: pet!),
+                      builder: (_) => TrainingLogHistoryPage(pet: _pet),
                     ),
                   );
                 },
@@ -263,44 +376,46 @@ class HealthLogPage extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: PawsBaseTokens.primaryContainer.withValues(alpha: 0.3),
-                shape: BoxShape.circle,
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color valueColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: PawsBaseTokens.surfaceBright,
+        borderRadius: BorderRadius.circular(PawsBaseTokens.borderRadius),
+        border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: PawsBaseTokens.onSurfaceVariant),
+          const SizedBox(width: 12),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontSize: 12,
+                  color: PawsBaseTokens.onSurfaceVariant,
+                ),
               ),
-              child: const Icon(Icons.monitor_heart, color: PawsBaseTokens.primaryDark, size: 40),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              "No Pet Selected",
-              style: TextStyle(
-                fontFamily: PawsBaseTokens.fontFamily,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                color: PawsBaseTokens.onSurface,
+              Text(
+                value,
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: valueColor,
+                ),
               ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              "Go to the Pets tab and tap on a pet to view their health log.",
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontFamily: PawsBaseTokens.fontFamily,
-                fontSize: 16,
-                color: PawsBaseTokens.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ),
     );
   }
