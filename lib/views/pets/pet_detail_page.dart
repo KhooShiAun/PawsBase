@@ -97,8 +97,9 @@ class _PetDetailPageState extends State<PetDetailPage> {
                 ),
               );
               if (result == 'deleted') {
-                // Pet was deleted, pop back to the pets list
-                if (mounted) Navigator.of(context).pop(true);
+                if (context.mounted) {
+                  Navigator.of(context).pop(true);
+                }
               } else if (result == true) {
                 await _refreshPet();
               }
@@ -486,58 +487,6 @@ class _PetDetailPageState extends State<PetDetailPage> {
     );
   }
 
-  Widget _buildChipWithIcon(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: PawsBaseTokens.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: PawsBaseTokens.fontFamily,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: PawsBaseTokens.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatBlock(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: PawsBaseTokens.fontFamily,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: PawsBaseTokens.outline,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontFamily: PawsBaseTokens.fontFamily,
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: PawsBaseTokens.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildTimelineItem({
     required IconData icon,
@@ -706,7 +655,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       decoration: const InputDecoration(labelText: 'Entry Type'),
                       items: const [
                         DropdownMenuItem(value: 'checkup', child: Text('Routine Checkup')),
@@ -819,7 +768,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     DropdownButtonFormField<String>(
-                      value: selectedType,
+                      initialValue: selectedType,
                       decoration: const InputDecoration(labelText: 'Entry Type'),
                       items: const [
                         DropdownMenuItem(value: 'checkup', child: Text('Routine Checkup')),
@@ -907,7 +856,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
     }
   }
 
-  Future<void> _deleteEntry(String id) async {
+  Future<void> _deleteEntry(dynamic id) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
