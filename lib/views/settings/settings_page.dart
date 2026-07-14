@@ -3,6 +3,9 @@ import 'package:pawsbase/theme/tokens.dart';
 import 'package:pawsbase/services/auth_service.dart';
 import 'package:pawsbase/views/settings/profile_page.dart';
 import 'package:pawsbase/views/settings/security_page.dart';
+import 'package:pawsbase/views/settings/help_center_page.dart';
+import 'package:pawsbase/views/settings/privacy_policy_page.dart';
+import 'package:pawsbase/views/settings/about_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -213,7 +216,9 @@ class _SettingsPageState extends State<SettingsPage> {
           title: "Help Center",
           colorScheme: colorScheme,
           onTap: () {
-            // Help Center tap action
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const HelpCenterPage()),
+            );
           },
         ),
         _buildDivider(colorScheme),
@@ -224,7 +229,9 @@ class _SettingsPageState extends State<SettingsPage> {
           title: "Privacy Policy",
           colorScheme: colorScheme,
           onTap: () {
-            // Privacy Policy tap action
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PrivacyPolicyPage()),
+            );
           },
         ),
         _buildDivider(colorScheme),
@@ -235,7 +242,9 @@ class _SettingsPageState extends State<SettingsPage> {
           title: "About PawsBase",
           colorScheme: colorScheme,
           onTap: () {
-            // About PawsBase tap action
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AboutPage()),
+            );
           },
         ),
       ],
