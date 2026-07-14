@@ -12,10 +12,12 @@ class SecurityPage extends StatefulWidget {
 
 class _SecurityPageState extends State<SecurityPage> {
   final _passwordFormKey = GlobalKey<FormState>();
+  final _oldPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
   bool _isSavingPassword = false;
+  bool _obscureOldPassword = true;
   bool _obscureNewPassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -40,6 +42,24 @@ class _SecurityPageState extends State<SecurityPage> {
 
     setState(() => _isSavingPassword = true);
     try {
+      final email = Supabase.instance.client.auth.currentUser?.email;
+      if (email == null) {
+        throw Exception("User email not found. Please log in again.");
+      }
+
+      // Verify current password by attempting to sign in
+      try {
+        await Supabase.instance.client.auth.signInWithPassword(
+          email: email,
+          password: _oldPasswordController.text,
+        );
+      } on AuthException catch (ae) {
+        final msg = ae.message.toLowerCase().contains('invalid login credentials')
+            ? 'Incorrect current password.'
+            : ae.message;
+        throw Exception(msg);
+      }
+
       final newPassword = _newPasswordController.text;
 
       // Update password using Supabase Auth
@@ -47,6 +67,7 @@ class _SecurityPageState extends State<SecurityPage> {
         UserAttributes(password: newPassword),
       );
 
+      _oldPasswordController.clear();
       _newPasswordController.clear();
       _confirmPasswordController.clear();
 
@@ -60,9 +81,11 @@ class _SecurityPageState extends State<SecurityPage> {
       }
     } catch (e) {
       if (mounted) {
+        // Strip Exception prefix if present for clean UI display
+        final displayError = e.toString().replaceFirst('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update password: $e'),
+            content: Text(displayError),
             backgroundColor: PawsBaseTokens.error,
           ),
         );
@@ -239,6 +262,7 @@ class _SecurityPageState extends State<SecurityPage> {
 
   @override
   void dispose() {
+    _oldPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -322,6 +346,20 @@ class _SecurityPageState extends State<SecurityPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        _buildLabel('Current Password'),
+                        const SizedBox(height: 8),
+                        _buildPasswordField(
+                          controller: _oldPasswordController,
+                          hintText: 'Enter current password',
+                          obscureText: _obscureOldPassword,
+                          toggleObscure: () => setState(() => _obscureOldPassword = !_obscureOldPassword),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) return 'Current password is required';
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
                         _buildLabel('New Password'),
                         const SizedBox(height: 8),
                         _buildPasswordField(
