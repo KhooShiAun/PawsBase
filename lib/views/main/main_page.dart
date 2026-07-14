@@ -1,14 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
-import 'package:pawsbase/views/health_log/health_log_page.dart';
 import 'package:pawsbase/widgets/paws_card/paws_card.dart';
 import 'package:pawsbase/widgets/paws_search_bar/paws_search_bar.dart';
 import 'package:pawsbase/widgets/paws_bottom_nav/paws_bottom_nav.dart';
 import 'package:pawsbase/views/pets/pet.dart';
 import 'package:pawsbase/views/pets/add_pet_page.dart';
+import 'package:pawsbase/views/pets/pet_detail_page.dart';
 import 'package:pawsbase/views/home/home_page.dart';
 import 'package:pawsbase/views/training/training_checklist_page.dart';
-import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'package:pawsbase/views/settings/settings_page.dart';
@@ -21,12 +20,11 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _currentIndex = 1; // Default to 'Pets' tab as shown in the mockup
+  int _currentIndex = 1;
 
   final List<Widget> _pages = [
     const HomePage(),
     const _PetsPage(),
-    const HealthLogPage(),
     const TrainingChecklistPage(),
     const SettingsPage(),
   ];
@@ -69,7 +67,6 @@ class _MainPageState extends State<MainPage> {
           ),
         ),
         leadingWidth: 60,
-
       ),
       body: IndexedStack(
         index: _currentIndex,
@@ -77,10 +74,15 @@ class _MainPageState extends State<MainPage> {
       ),
       floatingActionButton: _currentIndex == 1
           ? FloatingActionButton(
-              onPressed: () {
-                Navigator.of(context).push(
+              onPressed: () async {
+                final result = await Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const AddPetPage()),
                 );
+                if (result == true) {
+                  setState(() {
+                    _pages[1] = _PetsPage(key: UniqueKey());
+                  });
+                }
               },
               backgroundColor: isDark ? colorScheme.primary : PawsBaseTokens.primaryDark,
               elevation: 4,
@@ -103,7 +105,7 @@ class _MainPageState extends State<MainPage> {
 }
 
 class _PetsPage extends StatefulWidget {
-  const _PetsPage();
+  const _PetsPage({super.key});
 
   @override
   State<_PetsPage> createState() => _PetsPageState();
@@ -116,52 +118,41 @@ class _PetsPageState extends State<_PetsPage> {
   bool _isLoading = true;
   String? _errorMessage;
 
-  StreamSubscription? _petsSubscription;
-
   @override
   void initState() {
     super.initState();
-    _subscribeToPets();
+    _fetchPets();
   }
 
-  void _subscribeToPets() {
-    // Listen for real-time updates to the pets table
-    _petsSubscription = Supabase.instance.client
-        .from('pets')
-        .stream(primaryKey: ['id'])
-        .listen((data) {
-      final loadedPets = data.map((json) => Pet.fromJson(json)).toList();
+  Future<void> _fetchPets() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final data = await Supabase.instance.client
+          .from('pets')
+          .select();
+      final loadedPets = (data as List).map((json) => Pet.fromJson(json)).toList();
       if (mounted) {
         setState(() {
           _allPets = loadedPets;
           _isLoading = false;
-          _errorMessage = null;
         });
       }
-    }, onError: (e) {
+    } catch (e) {
       if (mounted) {
         setState(() {
           _errorMessage = 'Failed to load pets. Please try again.';
           _isLoading = false;
         });
       }
-    });
-  }
-
-  void _retryFetch() {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-    // The stream will naturally re-emit or we could restart it, 
-    // but typically just waiting or restarting the app is enough.
-    _petsSubscription?.cancel();
-    _subscribeToPets();
+    }
   }
 
   @override
   void dispose() {
-    _petsSubscription?.cancel();
     _searchController.dispose();
     super.dispose();
   }
@@ -169,9 +160,7 @@ class _PetsPageState extends State<_PetsPage> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_errorMessage != null) {
@@ -192,7 +181,7 @@ class _PetsPageState extends State<_PetsPage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: _retryFetch,
+                onPressed: _fetchPets,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: PawsBaseTokens.primaryDark,
                   foregroundColor: Colors.white,
@@ -206,7 +195,7 @@ class _PetsPageState extends State<_PetsPage> {
     }
 
     if (_allPets.isEmpty) {
-      return const _EmptyPetsPage();
+      return _EmptyPetsPage(onRefresh: _fetchPets);
     }
 
     final filteredPets = _allPets.where((pet) {
@@ -217,74 +206,83 @@ class _PetsPageState extends State<_PetsPage> {
       return nameMatch || breedMatch || speciesMatch;
     }).toList();
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: 20),
-          Center(
-            child: Text(
-              'My Family',
-              style: TextStyle(
-                fontFamily: PawsBaseTokens.fontFamily,
-                fontSize: 36,
-                fontWeight: FontWeight.w400,
-                color: Theme.of(context).colorScheme.onSurface,
-                letterSpacing: -0.5,
+    return RefreshIndicator(
+      onRefresh: _fetchPets,
+      color: PawsBaseTokens.primaryDark,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 20),
+            Center(
+              child: Text(
+                'My Family',
+                style: TextStyle(
+                  fontFamily: PawsBaseTokens.fontFamily,
+                  fontSize: 36,
+                  fontWeight: FontWeight.w400,
+                  color: Theme.of(context).colorScheme.onSurface,
+                  letterSpacing: -0.5,
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: 24),
-          PawsSearchBar(
-            controller: _searchController,
-            hintText: 'Search pets...',
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-          ),
-          const SizedBox(height: 24),
-          Expanded(
-            child: filteredPets.isEmpty
-                ? Center(
-                    child: Text(
-                      'No pets found',
-                      style: TextStyle(
-                        fontFamily: PawsBaseTokens.fontFamily,
-                        fontSize: 16,
-                        color: PawsBaseTokens.onSurfaceVariant,
+            const SizedBox(height: 24),
+            PawsSearchBar(
+              controller: _searchController,
+              hintText: 'Search pets...',
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+            const SizedBox(height: 24),
+            Expanded(
+              child: filteredPets.isEmpty
+                  ? Center(
+                      child: Text(
+                        'No pets found',
+                        style: TextStyle(
+                          fontFamily: PawsBaseTokens.fontFamily,
+                          fontSize: 16,
+                          color: PawsBaseTokens.onSurfaceVariant,
+                        ),
                       ),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.only(bottom: 100),
+                      itemCount: filteredPets.length,
+                      separatorBuilder: (context, index) => const SizedBox(height: 24),
+                      itemBuilder: (context, index) {
+                        final pet = filteredPets[index];
+                        return PawsCard(
+                          name: pet.name,
+                          species: pet.species,
+                          breed: pet.breed,
+                          imageUrl: pet.imageUrl,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => PetDetailPage(pet: pet),
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.only(bottom: 100), // Clear float FAB & bottom navigation
-                    itemCount: filteredPets.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 24),
-                    itemBuilder: (context, index) {
-                      final pet = filteredPets[index];
-                      return PawsCard(
-                        name: pet.name,
-                        species: pet.species,
-                        breed: pet.breed,
-                        imageUrl: pet.imageUrl,
-                        onTap: () {
-                          // Action on tap
-                        },
-                      );
-                    },
-                  ),
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-
 class _EmptyPetsPage extends StatelessWidget {
-  const _EmptyPetsPage();
+  final VoidCallback onRefresh;
+
+  const _EmptyPetsPage({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -318,6 +316,18 @@ class _EmptyPetsPage extends StatelessWidget {
               fontFamily: PawsBaseTokens.fontFamily,
               fontSize: 16,
               color: PawsBaseTokens.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 24),
+          TextButton.icon(
+            onPressed: onRefresh,
+            icon: const Icon(Icons.refresh, color: PawsBaseTokens.primaryDark),
+            label: const Text(
+              'Refresh',
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                color: PawsBaseTokens.primaryDark,
+              ),
             ),
           ),
         ],

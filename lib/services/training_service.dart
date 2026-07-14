@@ -21,7 +21,7 @@ class TrainingService {
   }
 
   // Add a new training command
-  Future<TrainingCommand> addCommand(String name, String category) async {
+  Future<TrainingCommand> addCommand(String name, String category, {String? petId, int sessionsNeeded = 1}) async {
     try {
       final userId = _supabase.auth.currentUser?.id;
       if (userId == null) {
@@ -36,11 +36,53 @@ class TrainingService {
             'status': TrainingStatus.pending.value,
             'description': category,
             'user_id': userId,
+            'pet_id': petId,
+            'sessions_needed': sessionsNeeded,
+            'completed_sessions': 0,
           })
           .select()
           .single();
 
       return TrainingCommand.fromJson(response);
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  // Complete a session for a command
+  Future<void> completeTrainingSession(String id, int currentCompleted, int totalSessions, {String? petId, String? commandName}) async {
+    try {
+      final userId = _supabase.auth.currentUser?.id;
+      if (userId == null) {
+        throw Exception("User must be logged in.");
+      }
+
+      final newCompleted = currentCompleted + 1;
+      final newStatus = newCompleted >= totalSessions ? TrainingStatus.mastered : TrainingStatus.inProgress;
+
+      // Increment completed_sessions in training_commands
+      await _supabase
+          .from('training_commands')
+          .update({
+            'completed_sessions': newCompleted,
+            'status': newStatus.value,
+          })
+          .eq('id', id);
+      
+      // Optionally log to a health_logs / training_logs table if required
+      try {
+        await _supabase.from('health_logs').insert({
+          'user_id': userId,
+          'pet_id': petId,
+          'log_title': 'Training Completed',
+          'subtitle': commandName ?? 'Training Session',
+          'description': 'Completed session ${currentCompleted + 1} for $commandName.',
+          'type': 'training',
+          'record_date': DateTime.now().toIso8601String(),
+        });
+      } catch (e) {
+        // Handle if table doesn't exist
+      }
     } catch (e) {
       rethrow;
     }

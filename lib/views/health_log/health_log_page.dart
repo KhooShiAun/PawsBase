@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
+import 'package:pawsbase/views/pets/pet.dart';
+import 'package:pawsbase/views/training/training_log_history_page.dart';
 
 class HealthLogPage extends StatelessWidget {
-  const HealthLogPage({super.key});
+  final Pet? pet;
+
+  const HealthLogPage({super.key, this.pet});
 
   @override
   Widget build(BuildContext context) {
+    if (pet == null) {
+      return _buildEmptyState();
+    }
+
     return Container(
       color: PawsBaseTokens.surface,
       child: SingleChildScrollView(
@@ -13,9 +21,8 @@ class HealthLogPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
             Text(
-              "Bella's Health Log",
+              "${pet!.name}'s Health Log",
               style: TextStyle(
                 fontFamily: PawsBaseTokens.fontFamily,
                 fontSize: 32,
@@ -27,9 +34,10 @@ class HealthLogPage extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                _buildChip("Golden Retriever", PawsBaseTokens.secondaryContainer, PawsBaseTokens.onSecondaryContainer),
-                const SizedBox(width: 8),
-                _buildChip("3 years old", PawsBaseTokens.surfaceDim, PawsBaseTokens.onSurfaceVariant),
+                if (pet!.breed != null)
+                  _buildChip(pet!.breed!, PawsBaseTokens.secondaryContainer, PawsBaseTokens.onSecondaryContainer),
+                if (pet!.breed != null) const SizedBox(width: 8),
+                _buildChip(pet!.species, PawsBaseTokens.surfaceDim, PawsBaseTokens.onSurfaceVariant),
               ],
             ),
             const SizedBox(height: 16),
@@ -43,11 +51,10 @@ class HealthLogPage extends StatelessWidget {
             ),
             const SizedBox(height: 48),
 
-            // Weight Highlight Card
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: PawsBaseTokens.surfaceBright, 
+                color: PawsBaseTokens.surfaceBright,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: PawsBaseTokens.outline.withValues(alpha: 0.2)),
               ),
@@ -147,7 +154,6 @@ class HealthLogPage extends StatelessWidget {
             ),
             const SizedBox(height: 48),
 
-            // Timeline Header
             Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -174,14 +180,13 @@ class HealthLogPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // Timeline Items
             _buildTimelineItem(
               icon: Icons.vaccines,
               iconColor: PawsBaseTokens.primaryDark,
               title: "Annual Vaccination",
               date: "Oct 12, 2023",
               subtitle: "Dr. Smith Clinic",
-              description: "Administered DHPP and Rabies booster. Bella was very well behaved. Next due in 1 year.",
+              description: "Administered DHPP and Rabies booster. ${pet!.name} was very well behaved. Next due in 1 year.",
               isLast: false,
               child: _buildChipWithIcon(Icons.receipt_long, "Invoice"),
             ),
@@ -216,6 +221,83 @@ class HealthLogPage extends StatelessWidget {
               subtitle: "Medication",
               description: "Administered monthly topical treatment. Set reminder for next dose.",
               isLast: true,
+            ),
+
+            const SizedBox(height: 48),
+
+            // View Training History Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => TrainingLogHistoryPage(pet: pet!),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: PawsBaseTokens.secondaryDark,
+                  foregroundColor: PawsBaseTokens.onSecondary,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                icon: const Icon(Icons.fitness_center, size: 20),
+                label: const Text(
+                  "View Training History",
+                  style: TextStyle(
+                    fontFamily: PawsBaseTokens.fontFamily,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 32),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: PawsBaseTokens.primaryContainer.withValues(alpha: 0.3),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.monitor_heart, color: PawsBaseTokens.primaryDark, size: 40),
+            ),
+            const SizedBox(height: 24),
+            const Text(
+              "No Pet Selected",
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                fontSize: 24,
+                fontWeight: FontWeight.w600,
+                color: PawsBaseTokens.onSurface,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "Go to the Pets tab and tap on a pet to view their health log.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                fontSize: 16,
+                color: PawsBaseTokens.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -309,7 +391,6 @@ class HealthLogPage extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Timeline line & icon
           SizedBox(
             width: 48,
             child: Stack(
@@ -348,7 +429,6 @@ class HealthLogPage extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 16),
-          // Content
           Expanded(
             child: Padding(
               padding: const EdgeInsets.only(bottom: 40),

@@ -4,6 +4,8 @@ import '../../services/training_service.dart';
 import 'training_command.dart';
 import 'training_status.dart';
 import 'training_config.dart';
+import '../pets/pet.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class TrainingChecklistPage extends StatefulWidget {
   const TrainingChecklistPage({super.key});
@@ -18,8 +20,9 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
 
   List<TrainingCommand> _commands = [];
   bool _isLoading = true;
-  bool _isAdding = false;
   String? _errorMessage;
+
+  List<Pet> _pets = [];
 
   @override
   void initState() {
@@ -40,8 +43,12 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
     });
 
     try {
+      final petsData = await Supabase.instance.client.from('pets').select();
+      final petsList = (petsData as List).map((json) => Pet.fromJson(json)).toList();
+
       final data = await _trainingService.fetchCommands();
       setState(() {
+        _pets = petsList;
         _commands = data;
       });
     } catch (e) {
@@ -71,27 +78,105 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
     return 'General training';
   }
 
-  IconData _getCommandIcon(String category, String name) {
-    final combined = '$name $category'.toLowerCase();
-    if (combined.contains('sit')) {
-      return Icons.airline_seat_recline_normal;
-    } else if (combined.contains('stay') || combined.contains('stop') || combined.contains('wait') || combined.contains('leave') || combined.contains('impulsive')) {
-      return Icons.front_hand;
-    } else if (combined.contains('fetch') || combined.contains('ball') || combined.contains('play') || combined.contains('retrieval')) {
-      return Icons.sports_baseball;
-    } else if (combined.contains('roll') || combined.contains('turn') || combined.contains('rotate') || combined.contains('spin')) {
-      return Icons.sync;
-    } else if (combined.contains('paw') || combined.contains('hand') || combined.contains('high') || combined.contains('shake')) {
-      return Icons.back_hand;
+
+  // Removed manual status cycling since status is now dynamically computed based on completedSessions
+
+
+
+
+  Future<void> _showAddCommandDialog() async {
+    final nameController = TextEditingController();
+    final sessionsController = TextEditingController(text: '1');
+    Pet? selectedPet = _pets.isNotEmpty ? _pets.first : null;
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: PawsBaseTokens.surfaceBright,
+              title: const Text('Add Training', style: TextStyle(fontFamily: PawsBaseTokens.fontFamily)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Training Name'),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<Pet>(
+                      initialValue: selectedPet,
+                      decoration: const InputDecoration(labelText: 'Select Pet'),
+                      items: _pets.map((pet) {
+                        return DropdownMenuItem(
+                          value: pet,
+                          child: Text(pet.name),
+                        );
+                      }).toList(),
+                      onChanged: (Pet? value) {
+                        setDialogState(() {
+                          selectedPet = value;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: sessionsController,
+                      decoration: const InputDecoration(labelText: 'Sessions Needed'),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true && nameController.text.isNotEmpty) {
+      final name = nameController.text.trim();
+      final sessions = int.tryParse(sessionsController.text.trim()) ?? 1;
+      
+      try {
+        final category = _inferCategory(name);
+        final newCommand = await _trainingService.addCommand(
+          name, 
+          category,
+          petId: selectedPet?.id,
+          sessionsNeeded: sessions,
+        );
+        setState(() {
+          _commands.add(newCommand);
+        });
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to add command: $e'),
+            backgroundColor: PawsBaseTokens.error,
+          ),
+        );
+      }
     }
-    return Icons.pets;
   }
 
-  Future<void> _cycleCommandStatus(TrainingCommand command) async {
-    final newStatus = command.status.next;
-    final originalStatus = command.status;
-
-    // Optimistic UI update
+  Future<void> _completeSession(TrainingCommand command) async {
+    if (command.completedSessions >= command.sessionsNeeded) return;
+    
+    // Optimistic update
     setState(() {
       final index = _commands.indexWhere((c) => c.id == command.id);
       if (index != -1) {
@@ -99,70 +184,352 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
           id: command.id,
           name: command.name,
           description: command.description,
-          status: newStatus,
           category: command.category,
           createdAt: command.createdAt,
+          petId: command.petId,
+          sessionsNeeded: command.sessionsNeeded,
+          completedSessions: command.completedSessions + 1,
         );
       }
     });
 
     try {
-      await _trainingService.updateCommandStatus(command.id, newStatus);
+      await _trainingService.completeTrainingSession(
+        command.id, 
+        command.completedSessions,
+        command.sessionsNeeded,
+        petId: command.petId,
+        commandName: command.name,
+      );
     } catch (e) {
-      // Revert optimistic update on failure
+      // Rollback on failure
       setState(() {
         final index = _commands.indexWhere((c) => c.id == command.id);
         if (index != -1) {
-          _commands[index] = TrainingCommand(
-            id: command.id,
-            name: command.name,
-            description: command.description,
-            status: originalStatus,
-            category: command.category,
-            createdAt: command.createdAt,
-          );
+          _commands[index] = command; // revert
         }
       });
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update status: $e'),
+          content: Text('Failed to complete session: $e'),
           backgroundColor: PawsBaseTokens.error,
         ),
       );
     }
   }
 
-  Future<void> _handleAddCommand() async {
-    final text = _addController.text.trim();
-    if (text.isEmpty) return;
+  void _showTrainingDetailsBottomSheet(TrainingCommand command, ColorScheme colorScheme) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      isScrollControlled: true, // Allows the sheet to take up more screen space
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            // Get latest command state from the list in case it updated
+            final currentCommand = _commands.firstWhere((c) => c.id == command.id, orElse: () => command);
+            final remaining = currentCommand.sessionsNeeded - currentCommand.completedSessions;
+            final progress = currentCommand.completedSessions / currentCommand.sessionsNeeded;
+            
+            return FractionallySizedBox(
+              heightFactor: 0.85, // Takes up 85% of screen height
+              child: Column(
+                children: [
+                  // Drag Handle
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 24),
+                      width: 48,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: colorScheme.outline.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                  
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          currentCommand.name,
+                          style: TextStyle(
+                            fontFamily: PawsBaseTokens.fontFamily,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Overall Progress',
+                                    style: TextStyle(
+                                      fontFamily: PawsBaseTokens.fontFamily,
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: colorScheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: LinearProgressIndicator(
+                                      value: progress,
+                                      minHeight: 8,
+                                      backgroundColor: colorScheme.outline.withValues(alpha: 0.1),
+                                      valueColor: const AlwaysStoppedAnimation<Color>(PawsBaseTokens.primary),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 24),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: remaining > 0 ? PawsBaseTokens.secondaryContainer : PawsBaseTokens.primaryContainer,
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                children: [
+                                  Text(
+                                    remaining > 0 ? '$remaining' : 'Done!',
+                                    style: TextStyle(
+                                      fontFamily: PawsBaseTokens.fontFamily,
+                                      fontSize: remaining > 0 ? 20 : 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: remaining > 0 ? PawsBaseTokens.onSecondaryContainer : PawsBaseTokens.onPrimaryContainer,
+                                    ),
+                                  ),
+                                  if (remaining > 0)
+                                    Text(
+                                      'Left',
+                                      style: TextStyle(
+                                        fontFamily: PawsBaseTokens.fontFamily,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: PawsBaseTokens.onSecondaryContainer,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  const Divider(height: 1),
+                  const SizedBox(height: 24),
+                  
+                  // Timeline
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8.0),
+                      itemCount: currentCommand.sessionsNeeded,
+                      itemBuilder: (context, index) {
+                        final isCompleted = index < currentCommand.completedSessions;
+                        final isNext = index == currentCommand.completedSessions;
+                        final isLast = index == currentCommand.sessionsNeeded - 1;
+                        
+                        return _buildTimelineItem(
+                          sessionIndex: index,
+                          isCompleted: isCompleted,
+                          isNext: isNext,
+                          isLast: isLast,
+                          colorScheme: colorScheme,
+                          onTap: () async {
+                            if (isNext) {
+                              await _completeSession(currentCommand);
+                              setSheetState(() {});
+                            }
+                          },
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+        );
+      },
+    );
+  }
 
-    final category = _inferCategory(text);
-    _addController.clear();
-    FocusScope.of(context).unfocus();
-
-    setState(() {
-      _isAdding = true;
-    });
-
-    try {
-      final newCommand = await _trainingService.addCommand(text, category);
-      setState(() {
-        _commands.add(newCommand);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to add command: $e'),
-          backgroundColor: PawsBaseTokens.error,
-        ),
-      );
-    } finally {
-      setState(() {
-        _isAdding = false;
-      });
-    }
+  Widget _buildTimelineItem({
+    required int sessionIndex,
+    required bool isCompleted,
+    required bool isNext,
+    required bool isLast,
+    required VoidCallback onTap,
+    required ColorScheme colorScheme,
+  }) {
+    final color = isCompleted 
+        ? PawsBaseTokens.primary 
+        : (isNext ? PawsBaseTokens.secondaryDark : colorScheme.outline.withValues(alpha: 0.3));
+        
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Timeline indicator
+          SizedBox(
+            width: 40,
+            child: Stack(
+              alignment: Alignment.topCenter,
+              children: [
+                if (!isLast)
+                  Positioned(
+                    top: 32,
+                    bottom: 0,
+                    child: Container(
+                      width: 2,
+                      color: isCompleted 
+                          ? PawsBaseTokens.primary.withValues(alpha: 0.5) 
+                          : colorScheme.outline.withValues(alpha: 0.2),
+                    ),
+                  ),
+                Positioned(
+                  top: 0,
+                  child: GestureDetector(
+                    onTap: isNext ? onTap : null,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeOutCubic,
+                      width: 32,
+                      height: 32,
+                      decoration: BoxDecoration(
+                        color: isCompleted ? PawsBaseTokens.primary : (isNext ? PawsBaseTokens.primaryContainer : Colors.transparent),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: color,
+                          width: isNext ? 3 : 2,
+                        ),
+                        boxShadow: isCompleted || isNext
+                            ? [
+                                BoxShadow(
+                                  color: color.withValues(alpha: 0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                )
+                              ]
+                            : null,
+                      ),
+                      child: isCompleted
+                          ? const Icon(Icons.check, size: 18, color: Colors.white)
+                          : (isNext 
+                              ? const Icon(Icons.play_arrow, size: 18, color: PawsBaseTokens.primaryDark)
+                              : null),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
+          // Content
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 32),
+              child: GestureDetector(
+                onTap: isNext ? onTap : null,
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isCompleted || isNext 
+                        ? colorScheme.surfaceContainerHighest 
+                        : colorScheme.surface,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: isNext 
+                          ? PawsBaseTokens.primary.withValues(alpha: 0.5) 
+                          : colorScheme.outline.withValues(alpha: 0.1),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Session ${sessionIndex + 1}',
+                              style: TextStyle(
+                                fontFamily: PawsBaseTokens.fontFamily,
+                                fontSize: 16,
+                                fontWeight: isCompleted || isNext ? FontWeight.w700 : FontWeight.w500,
+                                color: isCompleted || isNext ? colorScheme.onSurface : colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            if (isNext) ...[
+                              const SizedBox(height: 4),
+                              Text(
+                                'Tap to complete',
+                                style: TextStyle(
+                                  fontFamily: PawsBaseTokens.fontFamily,
+                                  fontSize: 13,
+                                  color: PawsBaseTokens.primaryDark,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ] else if (isCompleted) ...[
+                               const SizedBox(height: 4),
+                              Text(
+                                'Completed',
+                                style: TextStyle(
+                                  fontFamily: PawsBaseTokens.fontFamily,
+                                  fontSize: 13,
+                                  color: colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (isNext)
+                         Container(
+                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                           decoration: BoxDecoration(
+                             color: PawsBaseTokens.primary,
+                             borderRadius: BorderRadius.circular(20),
+                           ),
+                           child: const Text(
+                             'READY',
+                             style: TextStyle(
+                               fontFamily: PawsBaseTokens.fontFamily,
+                               fontSize: 10,
+                               fontWeight: FontWeight.w800,
+                               color: Colors.white,
+                               letterSpacing: 1.0,
+                             ),
+                           ),
+                         ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -174,9 +541,27 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
     final inProgressCount = _commands.where((c) => c.status == TrainingStatus.inProgress).length;
     final masteredCount = _commands.where((c) => c.status == TrainingStatus.mastered).length;
 
-    return Container(
-      color: PawsBaseTokens.surface,
-      child: SafeArea(
+    final sortedCommands = List<TrainingCommand>.from(_commands)..sort((a, b) {
+      if (a.status == TrainingStatus.mastered && b.status != TrainingStatus.mastered) {
+        return 1;
+      } else if (a.status != TrainingStatus.mastered && b.status == TrainingStatus.mastered) {
+        return -1;
+      }
+      return 0;
+    });
+
+    return Scaffold(
+      backgroundColor: PawsBaseTokens.surface,
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddCommandDialog,
+        backgroundColor: PawsBaseTokens.primaryDark,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.0),
+        ),
+        child: const Icon(Icons.add, color: Colors.white, size: 28),
+      ),
+      body: SafeArea(
         bottom: false,
         child: RefreshIndicator(
           onRefresh: _loadCommands,
@@ -231,16 +616,14 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
                   )
                 else if (_errorMessage != null)
                   _buildErrorState()
-                else if (_commands.isEmpty)
+                else if (sortedCommands.isEmpty)
                   _buildEmptyState(colorScheme)
                 else
-                  ..._commands.map((cmd) => _buildCommandCard(cmd, colorScheme)),
+                  ...sortedCommands.map((cmd) => _buildCommandCard(cmd, colorScheme)),
 
                 const SizedBox(height: 24),
 
-                // Add command input row
-                _buildAddCommandInput(colorScheme),
-                const SizedBox(height: 24), // Bottom buffer
+                const SizedBox(height: 80), // Bottom buffer for FAB
               ],
             ),
           ),
@@ -286,86 +669,99 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
   }
 
   Widget _buildCommandCard(TrainingCommand command, ColorScheme colorScheme) {
-    final icon = _getCommandIcon(command.category, command.name);
+    // Find pet name if available in our dummy list
+    final pet = _pets.where((p) => p.id == command.petId).firstOrNull;
+    final petName = pet?.name ?? 'Unknown Pet';
 
     return GestureDetector(
-      onTap: () => _cycleCommandStatus(command),
+      onTap: () => _showTrainingDetailsBottomSheet(command, colorScheme),
       behavior: HitTestBehavior.opaque,
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest,
+          color: command.status == TrainingStatus.mastered
+              ? Colors.green.withValues(alpha: 0.1)
+              : colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
+          border: Border.all(
+            color: command.status == TrainingStatus.mastered
+                ? Colors.green.withValues(alpha: 0.3)
+                : colorScheme.outline.withValues(alpha: 0.15),
+          ),
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Icon
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: PawsBaseTokens.secondaryContainer.withValues(alpha: 0.4),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                icon,
-                color: PawsBaseTokens.secondaryDark,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-
-            // Text info
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    command.name,
-                    style: TextStyle(
-                      fontFamily: PawsBaseTokens.fontFamily,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    command.description.isNotEmpty ? command.description : command.category,
-                    style: TextStyle(
-                      fontFamily: PawsBaseTokens.fontFamily,
-                      fontSize: 13,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Status Badge
             Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
+                // Pet Picture Placeholder / Icon
                 Container(
-                  width: 8,
-                  height: 8,
+                  width: 48,
+                  height: 48,
                   decoration: BoxDecoration(
-                    color: command.status.color,
+                    color: PawsBaseTokens.secondaryContainer.withValues(alpha: 0.4),
                     shape: BoxShape.circle,
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  command.status.label,
-                  style: TextStyle(
-                    fontFamily: PawsBaseTokens.fontFamily,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: command.status.color,
+                  child: const Icon(
+                    Icons.pets,
+                    color: PawsBaseTokens.secondaryDark,
+                    size: 24,
                   ),
                 ),
+                const SizedBox(width: 16),
+
+                // Text info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        petName,
+                        style: TextStyle(
+                          fontFamily: PawsBaseTokens.fontFamily,
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        command.name,
+                        style: TextStyle(
+                          fontFamily: PawsBaseTokens.fontFamily,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Status Badge
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8,
+                      height: 8,
+                        decoration: BoxDecoration(
+                          color: command.status.color,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        command.status.label,
+                        style: TextStyle(
+                          fontFamily: PawsBaseTokens.fontFamily,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: command.status.color,
+                        ),
+                      ),
+                    ],
+                  ),
               ],
             ),
           ],
@@ -375,61 +771,32 @@ class _TrainingChecklistPageState extends State<TrainingChecklistPage> {
   }
 
   Widget _buildAddCommandInput(ColorScheme colorScheme) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.15)),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: BoxDecoration(
-                color: PawsBaseTokens.surface.withValues(alpha: 0.5),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: TextField(
-                controller: _addController,
-                decoration: const InputDecoration(
-                  hintText: TrainingConfig.addCommandPlaceholder,
-                  border: InputBorder.none,
-                ),
-                style: const TextStyle(
-                  fontFamily: PawsBaseTokens.fontFamily,
-                ),
-                onSubmitted: (_) => _handleAddCommand(),
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: _handleAddCommand,
-            child: Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
+    return GestureDetector(
+      onTap: _showAddCommandDialog,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: PawsBaseTokens.primary.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: PawsBaseTokens.primary.withValues(alpha: 0.2)),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add, color: PawsBaseTokens.primary),
+            SizedBox(width: 8),
+            Text(
+              'Add Training Session',
+              style: TextStyle(
+                fontFamily: PawsBaseTokens.fontFamily,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
                 color: PawsBaseTokens.primary,
-                borderRadius: BorderRadius.circular(12),
               ),
-              child: _isAdding
-                  ? const Padding(
-                      padding: EdgeInsets.all(14.0),
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(PawsBaseTokens.onPrimaryContainer),
-                      ),
-                    )
-                  : const Icon(
-                      Icons.add,
-                      color: PawsBaseTokens.onPrimaryContainer,
-                      size: 24,
-                    ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
