@@ -96,7 +96,10 @@ class _PetDetailPageState extends State<PetDetailPage> {
                   builder: (_) => EditPetPage(pet: _pet),
                 ),
               );
-              if (result == true) {
+              if (result == 'deleted') {
+                // Pet was deleted, pop back to the pets list
+                if (mounted) Navigator.of(context).pop(true);
+              } else if (result == true) {
                 await _refreshPet();
               }
             },
@@ -375,6 +378,8 @@ class _PetDetailPageState extends State<PetDetailPage> {
                   subtitle: log['subtitle'] ?? 'General',
                   description: log['description'] ?? '',
                   isLast: isLast,
+                  onEdit: () => _showEditEntryDialog(log),
+                  onDelete: () => _deleteEntry(log['id']),
                 );
               }),
 
@@ -542,6 +547,8 @@ class _PetDetailPageState extends State<PetDetailPage> {
     required String subtitle,
     required String description,
     required bool isLast,
+    VoidCallback? onEdit,
+    VoidCallback? onDelete,
     Widget? child,
   }) {
     return IntrinsicHeight(
@@ -615,14 +622,32 @@ class _PetDetailPageState extends State<PetDetailPage> {
                             ),
                           ),
                         ),
-                        Text(
-                          date,
-                          style: TextStyle(
-                            fontFamily: PawsBaseTokens.fontFamily,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: PawsBaseTokens.outline,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              date,
+                              style: TextStyle(
+                                fontFamily: PawsBaseTokens.fontFamily,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: PawsBaseTokens.outline,
+                              ),
+                            ),
+                            if (onEdit != null || onDelete != null) ...[
+                              const SizedBox(width: 8),
+                              if (onEdit != null)
+                                GestureDetector(
+                                  onTap: onEdit,
+                                  child: const Icon(Icons.edit_outlined, size: 18, color: PawsBaseTokens.primaryDark),
+                                ),
+                              if (onEdit != null && onDelete != null) const SizedBox(width: 8),
+                              if (onDelete != null)
+                                GestureDetector(
+                                  onTap: onDelete,
+                                  child: const Icon(Icons.delete_outline_rounded, size: 18, color: PawsBaseTokens.error),
+                                ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
@@ -666,6 +691,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
     final subtitleController = TextEditingController();
     final descController = TextEditingController();
     String selectedType = 'checkup';
+    DateTime selectedDate = DateTime.now();
 
     final result = await showDialog<bool>(
       context: context,
@@ -708,6 +734,27 @@ class _PetDetailPageState extends State<PetDetailPage> {
                       decoration: const InputDecoration(labelText: 'Notes/Description'),
                       maxLines: 3,
                     ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Date:', style: TextStyle(fontWeight: FontWeight.w600)),
+                        TextButton(
+                          onPressed: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                            );
+                            if (date != null) {
+                              setDialogState(() => selectedDate = date);
+                            }
+                          },
+                          child: Text("${selectedDate.month}/${selectedDate.day}/${selectedDate.year}"),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -739,13 +786,155 @@ class _PetDetailPageState extends State<PetDetailPage> {
           'subtitle': subtitleController.text.trim(),
           'description': descController.text.trim(),
           'type': selectedType,
-          'record_date': DateTime.now().toIso8601String(),
+          'record_date': selectedDate.toIso8601String(),
         });
         _fetchHealthLogs(); // refresh timeline
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Error saving log: $e'), backgroundColor: PawsBaseTokens.error),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showEditEntryDialog(Map<String, dynamic> log) async {
+    final titleController = TextEditingController(text: log['log_title'] ?? log['title']);
+    final subtitleController = TextEditingController(text: log['subtitle']);
+    final descController = TextEditingController(text: log['description']);
+    String selectedType = log['type'] ?? 'checkup';
+    DateTime selectedDate = DateTime.tryParse(log['record_date'] ?? '') ?? DateTime.now();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: PawsBaseTokens.surfaceBright,
+              title: const Text('Edit Health Log', style: TextStyle(fontFamily: PawsBaseTokens.fontFamily)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedType,
+                      decoration: const InputDecoration(labelText: 'Entry Type'),
+                      items: const [
+                        DropdownMenuItem(value: 'checkup', child: Text('Routine Checkup')),
+                        DropdownMenuItem(value: 'vaccination', child: Text('Vaccination')),
+                        DropdownMenuItem(value: 'medication', child: Text('Medication')),
+                        DropdownMenuItem(value: 'other', child: Text('Other')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => selectedType = val);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title (e.g. Annual Checkup)'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: subtitleController,
+                      decoration: const InputDecoration(labelText: 'Subtitle (e.g. Vet Clinic Name)'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descController,
+                      decoration: const InputDecoration(labelText: 'Notes/Description'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Date:', style: TextStyle(fontWeight: FontWeight.w600)),
+                        TextButton(
+                          onPressed: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                            );
+                            if (date != null) {
+                              setDialogState(() => selectedDate = date);
+                            }
+                          },
+                          child: Text("${selectedDate.month}/${selectedDate.day}/${selectedDate.year}"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true && titleController.text.isNotEmpty) {
+      try {
+        await Supabase.instance.client.from('health_logs').update({
+          'log_title': titleController.text.trim(),
+          'subtitle': subtitleController.text.trim(),
+          'description': descController.text.trim(),
+          'type': selectedType,
+          'record_date': selectedDate.toIso8601String(),
+        }).eq('id', log['id']);
+        _fetchHealthLogs(); // refresh timeline
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating log: $e'), backgroundColor: PawsBaseTokens.error),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteEntry(String id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: PawsBaseTokens.surfaceBright,
+          title: const Text('Delete Health Log', style: TextStyle(color: PawsBaseTokens.error)),
+          content: const Text('Are you sure you want to delete this health log entry?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: PawsBaseTokens.error, foregroundColor: Colors.white),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      try {
+        await Supabase.instance.client.from('health_logs').delete().eq('id', id);
+        _fetchHealthLogs();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting log: $e'), backgroundColor: PawsBaseTokens.error),
           );
         }
       }

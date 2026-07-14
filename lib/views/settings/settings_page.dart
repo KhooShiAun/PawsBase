@@ -43,10 +43,6 @@ class _SettingsPageState extends State<SettingsPage> {
             const SizedBox(height: 12),
             _buildAccountCard(colorScheme),
             const SizedBox(height: 32),
-            _buildSectionHeader("App Settings"),
-            const SizedBox(height: 12),
-            _buildAppSettingsCard(colorScheme),
-            const SizedBox(height: 32),
             _buildSectionHeader("Support"),
             const SizedBox(height: 12),
             _buildSupportCard(colorScheme),
@@ -128,79 +124,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  Widget _buildAppSettingsCard(ColorScheme colorScheme) {
-    final beigeBg = PawsBaseTokens.secondary.withValues(alpha: 0.3);
-    final brownIcon = PawsBaseTokens.secondaryDark;
-
-    return _buildCardContainer(
-      colorScheme: colorScheme,
-      children: [
-        _buildSettingRow(
-          icon: Icons.notifications_none_rounded,
-          iconBgColor: beigeBg,
-          iconColor: brownIcon,
-          title: "Notifications",
-          colorScheme: colorScheme,
-          onTap: () {
-            // Notifications tap action
-          },
-        ),
-        _buildDivider(colorScheme),
-        _buildSettingRow(
-          icon: Icons.straighten_outlined,
-          iconBgColor: beigeBg,
-          iconColor: brownIcon,
-          title: "Units",
-          colorScheme: colorScheme,
-          trailing: PopupMenuButton<String>(
-            initialValue: _units,
-            onSelected: (String newValue) {
-              setState(() {
-                _units = newValue;
-              });
-            },
-            offset: const Offset(0, 40),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                color: colorScheme.outline.withValues(alpha: 0.1),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _units,
-                  style: TextStyle(
-                    fontFamily: PawsBaseTokens.fontFamily,
-                    fontSize: 15,
-                    color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.keyboard_arrow_down,
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
-                  size: 20,
-                ),
-              ],
-            ),
-            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-              const PopupMenuItem<String>(
-                value: 'Metric',
-                child: Text('Metric'),
-              ),
-              const PopupMenuItem<String>(
-                value: 'Imperial',
-                child: Text('Imperial'),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
 
   Widget _buildSupportCard(ColorScheme colorScheme) {
     final greyBg = PawsBaseTokens.neutral.withValues(alpha: 0.15);
