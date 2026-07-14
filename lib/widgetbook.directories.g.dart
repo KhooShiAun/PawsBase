@@ -12,6 +12,12 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'package:pawsbase/views/health_log/health_log_page.stories.dart'
     as _pawsbase_views_health_log_health_log_page_stories;
+import 'package:pawsbase/views/settings/profile_page.stories.dart'
+    as _pawsbase_views_settings_profile_page_stories;
+import 'package:pawsbase/views/settings/security_page.stories.dart'
+    as _pawsbase_views_settings_security_page_stories;
+import 'package:pawsbase/views/settings/settings_page.stories.dart'
+    as _pawsbase_views_settings_settings_page_stories;
 import 'package:pawsbase/views/training/training_checklist_page.stories.dart'
     as _pawsbase_views_training_training_checklist_page_stories;
 import 'package:pawsbase/widgets/paws_bottom_nav/paws_bottom_nav.stories.dart'
@@ -42,6 +48,41 @@ final directories = <_widgetbook.WidgetbookNode>[
                 name: 'Default',
                 builder: _pawsbase_views_health_log_health_log_page_stories
                     .healthLogPageDefaultUseCase,
+              ),
+            ],
+          ),
+        ],
+      ),
+      _widgetbook.WidgetbookFolder(
+        name: 'settings',
+        children: [
+          _widgetbook.WidgetbookComponent(
+            name: 'ProfilePage',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _pawsbase_views_settings_profile_page_stories
+                    .profilePageDefaultUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
+            name: 'SecurityPage',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _pawsbase_views_settings_security_page_stories
+                    .securityPageDefaultUseCase,
+              ),
+            ],
+          ),
+          _widgetbook.WidgetbookComponent(
+            name: 'SettingsPage',
+            useCases: [
+              _widgetbook.WidgetbookUseCase(
+                name: 'Default',
+                builder: _pawsbase_views_settings_settings_page_stories
+                    .settingsPageDefaultUseCase,
               ),
             ],
           ),

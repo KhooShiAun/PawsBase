@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 import 'package:pawsbase/services/auth_service.dart';
+import 'package:pawsbase/views/settings/profile_page.dart';
+import 'package:pawsbase/views/settings/security_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -101,7 +103,9 @@ class _SettingsPageState extends State<SettingsPage> {
           title: "Profile Information",
           colorScheme: colorScheme,
           onTap: () {
-            // Profile Information tap action
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const ProfilePage()),
+            );
           },
         ),
         _buildDivider(colorScheme),
@@ -112,7 +116,9 @@ class _SettingsPageState extends State<SettingsPage> {
           title: "Security",
           colorScheme: colorScheme,
           onTap: () {
-            // Security tap action
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const SecurityPage()),
+            );
           },
         ),
       ],
