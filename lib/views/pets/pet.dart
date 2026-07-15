@@ -8,6 +8,7 @@ class Pet {
   final DateTime? dateOfBirth;
   final bool? vaccinated;
   final bool? neutered;
+  final double? weightKg;
 
   const Pet({
     required this.id,
@@ -19,6 +20,7 @@ class Pet {
     this.dateOfBirth,
     this.vaccinated,
     this.neutered,
+    this.weightKg,
   });
 
   factory Pet.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,9 @@ class Pet {
           : null,
       vaccinated: json['vaccinated'] as bool?,
       neutered: json['neutered'] as bool?,
+      weightKg: json['weight_kg'] != null
+          ? (json['weight_kg'] as num).toDouble()
+          : null,
     );
   }
 
@@ -48,6 +53,7 @@ class Pet {
       'date_of_birth': dateOfBirth?.toIso8601String(),
       'vaccinated': vaccinated,
       'neutered': neutered,
+      'weight_kg': weightKg,
     };
   }
 }

@@ -245,7 +245,7 @@ class _PetDetailPageState extends State<PetDetailPage> {
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(
-                              "12.5",
+                              _pet.weightKg != null ? _pet.weightKg!.toStringAsFixed(1) : "--",
                               style: TextStyle(
                                 fontFamily: PawsBaseTokens.fontFamily,
                                 fontSize: 32,

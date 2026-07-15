@@ -2,17 +2,343 @@ import 'package:flutter/material.dart';
 import 'package:pawsbase/theme/tokens.dart';
 import 'package:pawsbase/views/pets/pet.dart';
 import 'package:pawsbase/views/training/training_log_history_page.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-class HealthLogPage extends StatelessWidget {
+class HealthLogPage extends StatefulWidget {
   final Pet? pet;
 
   const HealthLogPage({super.key, this.pet});
 
   @override
+  State<HealthLogPage> createState() => _HealthLogPageState();
+}
+
+class _HealthLogPageState extends State<HealthLogPage> {
+  late Pet? _pet;
+  List<Map<String, dynamic>> _healthLogs = [];
+  bool _isLoadingLogs = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _pet = widget.pet;
+    _fetchHealthLogs();
+  }
+
+  Future<void> _fetchHealthLogs() async {
+    if (_pet == null) return;
+    setState(() => _isLoadingLogs = true);
+    try {
+      final data = await Supabase.instance.client
+          .from('health_logs')
+          .select()
+          .eq('pet_id', _pet!.id)
+          .order('record_date', ascending: false);
+      if (mounted) {
+        setState(() {
+          _healthLogs = List<Map<String, dynamic>>.from(data);
+          _isLoadingLogs = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingLogs = false);
+      }
+    }
+  }
+
+  Future<void> _refreshPet() async {
+    if (_pet == null) return;
+    try {
+      final data = await Supabase.instance.client
+          .from('pets')
+          .select()
+          .eq('id', _pet!.id)
+          .single();
+      if (mounted) {
+        setState(() {
+          _pet = Pet.fromJson(data);
+        });
+      }
+    } catch (e) {
+      // keep existing pet data if refresh fails
+    }
+  }
+
+  String _formatWeightDate(String? dateStr) {
+    if (dateStr == null) return '';
+    final date = DateTime.tryParse(dateStr);
+    if (date == null) return '';
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return "${months[date.month - 1]} ${date.day}";
+  }
+
+  Future<void> _showAddEntryDialog() async {
+    if (_pet == null) return;
+    final titleController = TextEditingController();
+    final subtitleController = TextEditingController();
+    final descController = TextEditingController();
+    String selectedType = 'checkup';
+    DateTime selectedDate = DateTime.now();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: PawsBaseTokens.surfaceBright,
+              title: const Text('Add Health Log Entry', style: TextStyle(fontFamily: PawsBaseTokens.fontFamily)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedType,
+                      decoration: const InputDecoration(labelText: 'Entry Type'),
+                      items: const [
+                        DropdownMenuItem(value: 'checkup', child: Text('Routine Checkup')),
+                        DropdownMenuItem(value: 'vaccine', child: Text('Vaccination')),
+                        DropdownMenuItem(value: 'medication', child: Text('Medication')),
+                        DropdownMenuItem(value: 'other', child: Text('Other')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => selectedType = val);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title (e.g. Annual Checkup)'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: subtitleController,
+                      decoration: const InputDecoration(labelText: 'Subtitle (e.g. Vet Clinic Name)'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descController,
+                      decoration: const InputDecoration(labelText: 'Notes/Description'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Date:', style: TextStyle(fontWeight: FontWeight.w600)),
+                        TextButton(
+                          onPressed: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                            );
+                            if (date != null) {
+                              setDialogState(() => selectedDate = date);
+                            }
+                          },
+                          child: Text("${selectedDate.month}/${selectedDate.day}/${selectedDate.year}"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true && titleController.text.isNotEmpty) {
+      final userId = Supabase.instance.client.auth.currentUser?.id;
+      if (userId == null) return;
+
+      try {
+        await Supabase.instance.client.from('health_logs').insert({
+          'user_id': userId,
+          'pet_id': _pet!.id,
+          'log_title': titleController.text.trim(),
+          'subtitle': subtitleController.text.trim(),
+          'description': descController.text.trim(),
+          'type': selectedType,
+          'record_date': selectedDate.toIso8601String(),
+        });
+        await _refreshPet();
+        _fetchHealthLogs();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error saving log: $e'), backgroundColor: PawsBaseTokens.error),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _showEditEntryDialog(Map<String, dynamic> log) async {
+    final titleController = TextEditingController(text: log['log_title'] ?? log['title']);
+    final subtitleController = TextEditingController(text: log['subtitle']);
+    final descController = TextEditingController(text: log['description']);
+    String selectedType = log['type'] ?? 'checkup';
+    DateTime selectedDate = DateTime.tryParse(log['record_date'] ?? '') ?? DateTime.now();
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return AlertDialog(
+              backgroundColor: PawsBaseTokens.surfaceBright,
+              title: const Text('Edit Health Log', style: TextStyle(fontFamily: PawsBaseTokens.fontFamily)),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedType,
+                      decoration: const InputDecoration(labelText: 'Entry Type'),
+                      items: const [
+                        DropdownMenuItem(value: 'checkup', child: Text('Routine Checkup')),
+                        DropdownMenuItem(value: 'vaccine', child: Text('Vaccination')),
+                        DropdownMenuItem(value: 'medication', child: Text('Medication')),
+                        DropdownMenuItem(value: 'other', child: Text('Other')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) setDialogState(() => selectedType = val);
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title (e.g. Annual Checkup)'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: subtitleController,
+                      decoration: const InputDecoration(labelText: 'Subtitle (e.g. Vet Clinic Name)'),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: descController,
+                      decoration: const InputDecoration(labelText: 'Notes/Description'),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Date:', style: TextStyle(fontWeight: FontWeight.w600)),
+                        TextButton(
+                          onPressed: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                            );
+                            if (date != null) {
+                              setDialogState(() => selectedDate = date);
+                            }
+                          },
+                          child: Text("${selectedDate.month}/${selectedDate.day}/${selectedDate.year}"),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  child: const Text('Save'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (result == true && titleController.text.isNotEmpty) {
+      try {
+        await Supabase.instance.client.from('health_logs').update({
+          'log_title': titleController.text.trim(),
+          'subtitle': subtitleController.text.trim(),
+          'description': descController.text.trim(),
+          'type': selectedType,
+          'record_date': selectedDate.toIso8601String(),
+        }).eq('id', log['id']);
+        _fetchHealthLogs();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error updating log: $e'), backgroundColor: PawsBaseTokens.error),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _deleteEntry(dynamic id) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: PawsBaseTokens.surfaceBright,
+          title: const Text('Delete Health Log', style: TextStyle(color: PawsBaseTokens.error)),
+          content: const Text('Are you sure you want to delete this health log entry?'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: PawsBaseTokens.error, foregroundColor: Colors.white),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      try {
+        await Supabase.instance.client.from('health_logs').delete().eq('id', id);
+        _fetchHealthLogs();
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting log: $e'), backgroundColor: PawsBaseTokens.error),
+          );
+        }
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (pet == null) {
+    if (_pet == null) {
       return _buildEmptyState();
     }
+
+    final String lastWeightDateStr = _healthLogs.isNotEmpty 
+        ? _formatWeightDate(_healthLogs.first['record_date'])
+        : '';
 
     return Container(
       color: PawsBaseTokens.surface,
@@ -22,8 +348,8 @@ class HealthLogPage extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              "${pet!.name}'s Health Log",
-              style: TextStyle(
+              "${_pet!.name}'s Health Log",
+              style: const TextStyle(
                 fontFamily: PawsBaseTokens.fontFamily,
                 fontSize: 32,
                 fontWeight: FontWeight.w700,
@@ -34,14 +360,14 @@ class HealthLogPage extends StatelessWidget {
             const SizedBox(height: 8),
             Row(
               children: [
-                if (pet!.breed != null)
-                  _buildChip(pet!.breed!, PawsBaseTokens.secondaryContainer, PawsBaseTokens.onSecondaryContainer),
-                if (pet!.breed != null) const SizedBox(width: 8),
-                _buildChip(pet!.species, PawsBaseTokens.surfaceDim, PawsBaseTokens.onSurfaceVariant),
+                if (_pet!.breed != null)
+                  _buildChip(_pet!.breed!, PawsBaseTokens.secondaryContainer, PawsBaseTokens.onSecondaryContainer),
+                if (_pet!.breed != null) const SizedBox(width: 8),
+                _buildChip(_pet!.species, PawsBaseTokens.surfaceDim, PawsBaseTokens.onSurfaceVariant),
               ],
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               "Medical history and wellness tracking.",
               style: TextStyle(
                 fontFamily: PawsBaseTokens.fontFamily,
@@ -74,7 +400,7 @@ class HealthLogPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                        const Text(
                           "CURRENT WEIGHT",
                           style: TextStyle(
                             fontFamily: PawsBaseTokens.fontFamily,
@@ -90,8 +416,8 @@ class HealthLogPage extends StatelessWidget {
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Text(
-                              "12.5",
-                              style: TextStyle(
+                              _pet!.weightKg != null ? _pet!.weightKg!.toStringAsFixed(1) : "--",
+                              style: const TextStyle(
                                 fontFamily: PawsBaseTokens.fontFamily,
                                 fontSize: 32,
                                 fontWeight: FontWeight.w700,
@@ -99,7 +425,7 @@ class HealthLogPage extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text(
+                            const Text(
                               "kg",
                               style: TextStyle(
                                 fontFamily: PawsBaseTokens.fontFamily,
@@ -125,7 +451,7 @@ class HealthLogPage extends StatelessWidget {
                           children: [
                             const Icon(Icons.trending_up, color: PawsBaseTokens.primaryDark, size: 16),
                             const SizedBox(width: 4),
-                            Text(
+                            const Text(
                               "Stable",
                               style: TextStyle(
                                 fontFamily: PawsBaseTokens.fontFamily,
@@ -137,16 +463,18 @@ class HealthLogPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        "Oct 12",
-                        style: TextStyle(
-                          fontFamily: PawsBaseTokens.fontFamily,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PawsBaseTokens.outline,
+                      if (lastWeightDateStr.isNotEmpty) ...[
+                        const SizedBox(height: 12),
+                        Text(
+                          lastWeightDateStr,
+                          style: const TextStyle(
+                            fontFamily: PawsBaseTokens.fontFamily,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: PawsBaseTokens.outline,
+                          ),
                         ),
-                      ),
+                      ],
                     ],
                   ),
                 ],
@@ -158,7 +486,7 @@ class HealthLogPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 ElevatedButton.icon(
-                  onPressed: () {},
+                  onPressed: _showAddEntryDialog,
                   icon: const Icon(Icons.add, size: 20),
                   label: const Text("Add Entry"),
                   style: ElevatedButton.styleFrom(
@@ -180,48 +508,74 @@ class HealthLogPage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            _buildTimelineItem(
-              icon: Icons.vaccines,
-              iconColor: PawsBaseTokens.primaryDark,
-              title: "Annual Vaccination",
-              date: "Oct 12, 2023",
-              subtitle: "Dr. Smith Clinic",
-              description: "Administered DHPP and Rabies booster. ${pet!.name} was very well behaved. Next due in 1 year.",
-              isLast: false,
-              child: _buildChipWithIcon(Icons.receipt_long, "Invoice"),
-            ),
-            _buildTimelineItem(
-              icon: Icons.medical_services,
-              iconColor: PawsBaseTokens.secondaryDark,
-              title: "Routine Checkup",
-              date: "Jun 05, 2023",
-              subtitle: "General Health",
-              description: "Overall health is excellent. Teeth looking good, recommended continuing current dental chews.",
-              isLast: false,
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Row(
-                  children: [
-                    _buildStatBlock("Weight", "12.4 kg"),
-                    const SizedBox(width: 24),
-                    _buildStatBlock("Temp", "101.2°F"),
-                  ],
+            if (_isLoadingLogs) ...[
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(32.0),
+                  child: CircularProgressIndicator(color: PawsBaseTokens.primaryDark),
                 ),
               ),
-            ),
-            _buildTimelineItem(
-              icon: Icons.pest_control,
-              iconColor: PawsBaseTokens.neutralDark,
-              title: "Flea & Tick Prevention",
-              date: "Mar 15, 2023",
-              subtitle: "Medication",
-              description: "Administered monthly topical treatment. Set reminder for next dose.",
-              isLast: true,
-            ),
+            ] else if (_healthLogs.isEmpty) ...[
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(48.0),
+                  child: Text(
+                    "No health records yet.",
+                    style: TextStyle(
+                      fontFamily: PawsBaseTokens.fontFamily,
+                      fontSize: 16,
+                      color: PawsBaseTokens.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ),
+            ] else ...[
+              ..._healthLogs.asMap().entries.map((entry) {
+                final index = entry.key;
+                final log = entry.value;
+                final isLast = index == _healthLogs.length - 1;
+
+                // Choose icon based on type
+                IconData icon = Icons.health_and_safety;
+                Color iconColor = PawsBaseTokens.primaryDark;
+
+                final type = log['type'] ?? '';
+                switch (type) {
+                  case 'vaccine':
+                  case 'vaccination':
+                    icon = Icons.vaccines;
+                    iconColor = PawsBaseTokens.primaryDark;
+                    break;
+                  case 'checkup':
+                    icon = Icons.medical_services;
+                    iconColor = PawsBaseTokens.secondaryDark;
+                    break;
+                  case 'medication':
+                    icon = Icons.pest_control;
+                    iconColor = PawsBaseTokens.neutralDark;
+                    break;
+                  case 'training':
+                    icon = Icons.fitness_center;
+                    iconColor = PawsBaseTokens.secondaryDark;
+                    break;
+                }
+
+                DateTime recordDate = DateTime.tryParse(log['record_date'] ?? '') ?? DateTime.now();
+                String formattedDate = "${recordDate.month}/${recordDate.day}/${recordDate.year}";
+
+                return _buildTimelineItem(
+                  icon: icon,
+                  iconColor: iconColor,
+                  title: log['log_title'] ?? log['title'] ?? 'Record',
+                  date: log['record_date']?.substring(0, 10) ?? formattedDate,
+                  subtitle: log['subtitle'] ?? 'General',
+                  description: log['description'] ?? '',
+                  isLast: isLast,
+                  onEdit: () => _showEditEntryDialog(log),
+                  onDelete: () => _deleteEntry(log['id']),
+                );
+              }),
+            ],
 
             const SizedBox(height: 48),
 
@@ -232,7 +586,7 @@ class HealthLogPage extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => TrainingLogHistoryPage(pet: pet!),
+                      builder: (_) => TrainingLogHistoryPage(pet: _pet!),
                     ),
                   );
                 },
@@ -324,59 +678,6 @@ class HealthLogPage extends StatelessWidget {
     );
   }
 
-  Widget _buildChipWithIcon(IconData icon, String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: PawsBaseTokens.surfaceDim.withValues(alpha: 0.5),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: PawsBaseTokens.onSurfaceVariant),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontFamily: PawsBaseTokens.fontFamily,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              color: PawsBaseTokens.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatBlock(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontFamily: PawsBaseTokens.fontFamily,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: PawsBaseTokens.outline,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            fontFamily: PawsBaseTokens.fontFamily,
-            fontSize: 16,
-            fontWeight: FontWeight.w400,
-            color: PawsBaseTokens.onSurface,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _buildTimelineItem({
     required IconData icon,
     required Color iconColor,
@@ -385,6 +686,8 @@ class HealthLogPage extends StatelessWidget {
     required String subtitle,
     required String description,
     required bool isLast,
+    VoidCallback? onEdit,
+    VoidCallback? onDelete,
     Widget? child,
   }) {
     return IntrinsicHeight(
@@ -450,7 +753,7 @@ class HealthLogPage extends StatelessWidget {
                         Expanded(
                           child: Text(
                             title,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontFamily: PawsBaseTokens.fontFamily,
                               fontSize: 24,
                               fontWeight: FontWeight.w600,
@@ -458,21 +761,39 @@ class HealthLogPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Text(
-                          date,
-                          style: TextStyle(
-                            fontFamily: PawsBaseTokens.fontFamily,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: PawsBaseTokens.outline,
-                          ),
+                        Row(
+                          children: [
+                            Text(
+                              date,
+                              style: const TextStyle(
+                                fontFamily: PawsBaseTokens.fontFamily,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: PawsBaseTokens.outline,
+                              ),
+                            ),
+                            if (onEdit != null || onDelete != null) ...[
+                              const SizedBox(width: 8),
+                              if (onEdit != null)
+                                GestureDetector(
+                                  onTap: onEdit,
+                                  child: const Icon(Icons.edit_outlined, size: 18, color: PawsBaseTokens.primaryDark),
+                                ),
+                              if (onEdit != null && onDelete != null) const SizedBox(width: 8),
+                              if (onDelete != null)
+                                GestureDetector(
+                                  onTap: onDelete,
+                                  child: const Icon(Icons.delete_outline_rounded, size: 18, color: PawsBaseTokens.error),
+                                ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
                     const SizedBox(height: 4),
                     Text(
                       subtitle.toUpperCase(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: PawsBaseTokens.fontFamily,
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
@@ -483,7 +804,7 @@ class HealthLogPage extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       description,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontFamily: PawsBaseTokens.fontFamily,
                         fontSize: 16,
                         color: PawsBaseTokens.onSurfaceVariant,

@@ -35,7 +35,8 @@ class _EditPetPageState extends State<EditPetPage> {
     super.initState();
     _nameController = TextEditingController(text: widget.pet.name);
     _breedController = TextEditingController(text: widget.pet.breed ?? '');
-    _weightController = TextEditingController();
+    _weightController = TextEditingController(
+        text: widget.pet.weightKg != null ? widget.pet.weightKg.toString() : '');
     _selectedSpecies = widget.pet.species;
     _selectedGender = widget.pet.gender ?? 'male';
     _selectedVaccinated = (widget.pet.vaccinated ?? false) ? 'yes' : 'no';
@@ -113,6 +114,7 @@ class _EditPetPageState extends State<EditPetPage> {
           'species': _selectedSpecies,
           'gender': _selectedGender,
           'breed': _breedController.text.trim().isEmpty ? null : _breedController.text.trim(),
+          'weight_kg': _weightController.text.trim().isEmpty ? null : double.tryParse(_weightController.text.trim()),
           'date_of_birth': _dateOfBirth?.toIso8601String(),
           'vaccinated': _selectedVaccinated == 'yes',
           'neutered': _selectedNeutered == 'yes',
@@ -421,6 +423,15 @@ class _EditPetPageState extends State<EditPetPage> {
                   ),
                   const SizedBox(height: 20),
 
+                  _FieldLabel('Weight (kg)'),
+                  const SizedBox(height: 8),
+                  _PawsTextInput(
+                    controller: _weightController,
+                    hintText: 'E.g., 12.5',
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  ),
+                  const SizedBox(height: 20),
+
                   _FieldLabel('Date of Birth'),
                   const SizedBox(height: 8),
                   _DatePickerField(
@@ -548,11 +559,13 @@ class _PawsTextInput extends StatelessWidget {
   final TextEditingController controller;
   final String hintText;
   final String? Function(String?)? validator;
+  final TextInputType? keyboardType;
 
   const _PawsTextInput({
     required this.controller,
     required this.hintText,
     this.validator,
+    this.keyboardType,
   });
 
   @override
@@ -560,6 +573,7 @@ class _PawsTextInput extends StatelessWidget {
     return TextFormField(
       controller: controller,
       validator: validator,
+      keyboardType: keyboardType,
       style: const TextStyle(
         fontFamily: PawsBaseTokens.fontFamily,
         fontSize: 16,
