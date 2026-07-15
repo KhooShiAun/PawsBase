@@ -22,12 +22,35 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 1;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const _PetsPage(),
-    const TrainingChecklistPage(),
-    const SettingsPage(),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      HomePage(
+        onTabSelected: _onTabSelected,
+        key: UniqueKey(),
+      ),
+      _PetsPage(key: UniqueKey()),
+      const TrainingChecklistPage(),
+      const SettingsPage(),
+    ];
+  }
+
+  void _onTabSelected(int index) {
+    setState(() {
+      _currentIndex = index;
+      if (index == 0) {
+        _pages[0] = HomePage(
+          onTabSelected: _onTabSelected,
+          key: UniqueKey(),
+        );
+      } else if (index == 1) {
+        _pages[1] = _PetsPage(key: UniqueKey());
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,6 +87,10 @@ class _MainPageState extends State<MainPage> {
                 if (result == true) {
                   setState(() {
                     _pages[1] = _PetsPage(key: UniqueKey());
+                    _pages[0] = HomePage(
+                      onTabSelected: _onTabSelected,
+                      key: UniqueKey(),
+                    );
                   });
                 }
               },
@@ -77,11 +104,7 @@ class _MainPageState extends State<MainPage> {
           : null,
       bottomNavigationBar: PawsBottomNav(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
+        onTap: _onTabSelected,
       ),
     );
   }
