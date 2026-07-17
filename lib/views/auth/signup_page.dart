@@ -80,6 +80,12 @@ class _SignUpPageState extends State<SignUpPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const Icon(
+                  Icons.pets,
+                  size: 80,
+                  color: PawsBaseTokens.primaryDark,
+                ),
+                const SizedBox(height: 24),
                 const Text(
                   'Create Account',
                   style: TextStyle(

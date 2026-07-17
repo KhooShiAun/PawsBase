@@ -64,6 +64,12 @@ class _LoginPageState extends State<LoginPage> {
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                const Icon(
+                  Icons.pets,
+                  size: 80,
+                  color: PawsBaseTokens.primaryDark,
+                ),
+                const SizedBox(height: 24),
                 const Text(
                   'Welcome Back',
                   style: TextStyle(
